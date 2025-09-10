@@ -1,0 +1,33 @@
+/*.el-overlay {*/
+/*  position: fixed;*/
+/*  top: 0 !important;*/
+/*  left: 0 !important;*/
+/*  width: 100vw !important;*/
+/*  height: 100vh !important;*/
+/*  z-index: 2010 !important;*/
+/*}*/
+
+:root {
+  --el-switch-on-color: #10b981;
+}
+
+:deep(.el-dialog__body) {
+  min-height: 600px;
+}
+
+:deep(.el-switch) {
+  --el-switch-on-color: --el-switch-on-color;
+}
+
+.el-dialog {
+  padding: 20px !important;
+  border-radius: 8px !important;
+}
+
+.el-card {
+  border-radius: 8px !important;
+}
+
+.el-dialog__body {
+  max-height: calc(100vh - 400px);
+}

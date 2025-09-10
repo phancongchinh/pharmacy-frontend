@@ -1,0 +1,144 @@
+:root {
+  --el-color-primary: #409eff;
+  --el-color-primary-light-9: #e6f4ff;
+  --el-text-color-primary: #303133;
+  --el-text-color-secondary: #606266;
+  --el-border-color: #dcdee5;
+  --topbar-height: 64px;
+  --sidebar-width: 256px;
+  --right-sidebar-width: 60px;
+}
+
+/*Topbar styles*/
+
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+}
+
+.topbar {
+  height: var(--topbar-height);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  background: white;
+  border-bottom: 1px solid var(--el-border-color);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  padding-right: 2px !important;
+}
+
+/*Sidebar styles*/
+.sidebar {
+  position: fixed;
+  top: var(--topbar-height);
+  left: 0;
+  z-index: 40;
+  height: calc(100vh - var(--topbar-height));
+  background: white;
+  border-right: 1px solid #e5e7eb;
+  transition: transform 0.3s ease-in-out;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.sidebar-open {
+  transform: translateX(0);
+}
+
+.sidebar-closed {
+  transform: translateX(-100%);
+}
+
+.main-content {
+  position: fixed;
+  top: var(--topbar-height);
+  height: calc(100vh - var(--topbar-height));
+  width: 100vw;
+  overflow-x: hidden;
+  overflow-y: auto;
+  transition: all 0.3s ease-in-out;
+}
+
+.main-content.main-content-auth-page {
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  transition: none;
+}
+
+.main-content.sidebar-open {
+  left: var(--sidebar-width);
+  width: calc(100% - var(--sidebar-width) - 60px);
+}
+
+.main-content:not(.sidebar-open):not(.main-content-auth-page) {
+  left: 0;
+  width: calc(100% - 60px);
+}
+
+.content-area {
+  flex: 1;
+  overflow: hidden;
+  background: #f8fafc;
+}
+
+.content-wrapper {
+  min-height: 100%;
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    margin-left: 0;
+  }
+
+  .main-content.sidebar-open {
+    margin-left: 0;
+  }
+}
+
+/* Right side bar */
+.right-sidebar {
+  width: 60px;
+  background: white;
+  border-left: 1px solid #e5e7eb;
+  height: calc(100vh - 64px);
+  position: fixed;
+  right: 0;
+  top: var(--topbar-height);
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s ease;
+}
+
+/* Small scrollbar */
+.small-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  background-color: #f5f5f5;
+}
+
+.small-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #c6c6c6;
+  border-radius: 4px;
+}
+
+.small-scrollbar::-webkit-scrollbar-track {
+  background-color: #f5f5f5;
+}
+
+.small-scrollbar {
+  overflow-y: auto;
+}
+
+.small-scrollbar:hover {
+  overflow-y: auto;
+}
