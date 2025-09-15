@@ -154,11 +154,6 @@ const handleCommand = (command: string) => {
   transition: all 0.2s ease;
 }
 
-.sidebar-toggle-button:hover {
-  background-color: var(--el-color-primary-light-9);
-  color: var(--el-color-primary);
-}
-
 .notification-button {
   padding: 8px;
 }

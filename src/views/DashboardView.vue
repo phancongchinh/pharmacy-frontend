@@ -1,145 +1,185 @@
 <template>
-  <div class="dashboard-view">
-    <!-- Header Section -->
+  <div class="dashboard-container">
+    <!-- Header Section with improved typography -->
     <div class="dashboard-header">
-      <h1 class="dashboard-title">Dashboard Overview</h1>
-      <p class="dashboard-subtitle">Real-time analytics and insights</p>
+      <div class="header-content">
+        <h1 class="dashboard-title">Dashboard</h1>
+        <p class="dashboard-subtitle">
+          Welcome back! Here's what's happening with your business today.
+        </p>
+      </div>
+      <div class="header-actions">
+        <el-button type="primary" class="modern-button">
+          <span class="material-symbols-outlined">add</span>
+          New Report
+        </el-button>
+      </div>
     </div>
 
-    <div class="metrics-grid">
-      <!-- Key Metrics Cards -->
-      <el-card
-        class="metric-card"
-        shadow="hover"
-        v-for="(metric, index) in keyMetrics"
-        :key="index"
-      >
-        <div class="metric-content">
-          <div class="metric-icon revenue" :class="metric.iconClass">
-            <span class="material-symbols-outlined">{{ metric.icon }}</span>
-          </div>
-          <div class="metric-details">
-            <h3 class="metric-value">{{ format(statsOverviews[metric.stat], metric.format) }}</h3>
-            <p class="metric-label">{{ metric.title }}</p>
-            <span
-              class="metric-change positive"
+    <!-- Key Metrics Grid with modern cards -->
+    <div class="metrics-section">
+      <div class="metrics-grid">
+        <div class="metric-card modern-card" v-for="(metric, index) in keyMetrics" :key="index">
+          <div class="metric-header">
+            <div
+              class="metric-trend"
               :class="calculateStatsChanges(statsOverviews, metric.stat).class"
             >
+              <span class="material-symbols-outlined">
+                {{
+                  calculateStatsChanges(statsOverviews, metric.stat).class === 'positive'
+                    ? 'trending_up'
+                    : 'trending_down'
+                }}
+              </span>
               {{ calculateStatsChanges(statsOverviews, metric.stat).value }}
-            </span>
-          </div>
-        </div>
-      </el-card>
-    </div>
-
-    <!-- Charts Section -->
-    <div class="charts-grid">
-      <!-- Revenue Chart -->
-      <el-card class="chart-card" shadow="hover">
-        <template #header>
-          <div class="chart-header">
-            <h3>Revenue Overview</h3>
-            <el-select v-model="revenueTimeframe" size="small" style="width: 120px">
-              <el-option label="Last 7 days" value="7d" />
-              <el-option label="Last 30 days" value="30d" />
-              <el-option label="Last 3 months" value="3m" />
-            </el-select>
-          </div>
-        </template>
-        <apexchart
-          type="area"
-          height="300"
-          :options="revenueChartOptions"
-          :series="revenueChartSeries"
-        />
-      </el-card>
-
-      <!-- Sales by Category -->
-      <el-card class="chart-card" shadow="hover">
-        <template #header>
-          <div class="chart-header">
-            <h3>Sales by Category</h3>
-          </div>
-        </template>
-        <apexchart
-          type="donut"
-          height="300"
-          :options="categoryChartOptions"
-          :series="categoryChartSeries"
-        />
-      </el-card>
-
-      <!-- Customer Growth -->
-      <el-card class="chart-card wide" shadow="hover">
-        <template #header>
-          <div class="chart-header">
-            <h3>Customer Growth</h3>
-            <div class="chart-legend">
-              <span class="legend-item">
-                <span class="legend-color new"></span>
-                New Customers
-              </span>
-              <span class="legend-item">
-                <span class="legend-color returning"></span>
-                Returning Customers
-              </span>
             </div>
           </div>
-        </template>
-        <apexchart
-          type="line"
-          height="300"
-          :options="customerGrowthOptions"
-          :series="customerGrowthSeries"
-        />
-      </el-card>
-
-      <!-- Monthly Performance -->
-      <el-card class="chart-card wide" shadow="hover">
-        <template #header>
-          <div class="chart-header">
-            <h3>Monthly Performance</h3>
-          </div>
-        </template>
-        <apexchart
-          type="bar"
-          height="300"
-          :options="performanceChartOptions"
-          :series="performanceChartSeries"
-        />
-      </el-card>
-    </div>
-
-    <!-- Recent Organization Activity -->
-    <el-card class="activity-card" shadow="hover">
-      <template #header>
-        <div class="card-header">
-          <span class="material-symbols-outlined">history</span>
-          <h3>Recent Organization Activity</h3>
-        </div>
-      </template>
-
-      <div class="activity-list">
-        <div v-for="activity in recentActivities" :key="activity.id" class="activity-item-detailed">
-          <el-avatar :size="40" :src="activity.user.avatar">
-            {{ activity.user.name.charAt(0) }}
-          </el-avatar>
-          <div class="activity-content">
-            <div class="activity-text">
-              <strong>{{ activity.user.name }}</strong>
-              {{ activity.action }}
-              <strong>{{ activity.target }}</strong>
-              in
-              <span class="team-link">{{ activity.team }}</span>
-            </div>
-            <div class="activity-time">{{ formatActivityTime(activity.timestamp) }}</div>
-          </div>
-          <div class="activity-icon">
-            <span class="material-symbols-outlined">{{ activity.icon }}</span>
+          <div class="metric-body">
+            <div class="metric-value">{{ format(statsOverviews[metric.stat], metric.format) }}</div>
+            <div class="metric-label">{{ metric.title }}</div>
           </div>
         </div>
       </div>
-    </el-card>
+    </div>
+
+    <!-- Charts Section with modern layout -->
+    <div class="charts-section">
+      <div class="charts-row">
+        <!-- Revenue Chart -->
+        <div class="chart-container large">
+          <div class="chart-card modern-card">
+            <div class="chart-header">
+              <div class="chart-title-section">
+                <h3 class="chart-title">Revenue Analytics</h3>
+                <p class="chart-subtitle">Monthly revenue performance</p>
+              </div>
+              <div class="chart-controls">
+                <el-select v-model="revenueTimeframe" size="default" class="modern-select">
+                  <el-option label="Last 7 days" value="7d" />
+                  <el-option label="Last 30 days" value="30d" />
+                  <el-option label="Last 3 months" value="3m" />
+                </el-select>
+              </div>
+            </div>
+            <div class="chart-body">
+              <apexchart
+                type="area"
+                height="320"
+                :options="revenueChartOptions"
+                :series="revenueChartSeries"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Sales Distribution -->
+        <div class="chart-container medium">
+          <div class="chart-card modern-card">
+            <div class="chart-header">
+              <div class="chart-title-section">
+                <h3 class="chart-title">Sales Distribution</h3>
+                <p class="chart-subtitle">By category</p>
+              </div>
+            </div>
+            <div class="chart-body">
+              <apexchart
+                type="donut"
+                height="320"
+                :options="categoryChartOptions"
+                :series="categoryChartSeries"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="charts-row">
+        <!-- Customer Growth -->
+        <div class="chart-container medium">
+          <div class="chart-card modern-card">
+            <div class="chart-header">
+              <div class="chart-title-section">
+                <h3 class="chart-title">Customer Growth</h3>
+                <p class="chart-subtitle">New vs returning customers</p>
+              </div>
+            </div>
+            <div class="chart-body">
+              <apexchart
+                type="line"
+                height="320"
+                :options="customerGrowthOptions"
+                :series="customerGrowthSeries"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Performance Metrics -->
+        <div class="chart-container large">
+          <div class="chart-card modern-card">
+            <div class="chart-header">
+              <div class="chart-title-section">
+                <h3 class="chart-title">Performance Overview</h3>
+                <p class="chart-subtitle">Sales & profit comparison</p>
+              </div>
+            </div>
+            <div class="chart-body">
+              <apexchart
+                type="bar"
+                height="320"
+                :options="performanceChartOptions"
+                :series="performanceChartSeries"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Activity Feed Section -->
+    <div class="activity-section">
+      <div class="activity-card modern-card">
+        <div class="activity-header">
+          <div class="activity-title-section">
+            <div class="activity-icon">
+              <span class="material-symbols-outlined">notifications</span>
+            </div>
+            <div>
+              <h3 class="activity-title">Recent Activity</h3>
+              <p class="activity-subtitle">Latest updates from your team</p>
+            </div>
+          </div>
+          <el-button text class="view-all-btn">View All</el-button>
+        </div>
+
+        <div class="activity-list">
+          <div v-for="activity in recentActivities" :key="activity.id" class="activity-item">
+            <div class="activity-avatar">
+              <el-avatar :size="48" :src="activity.user.avatar" class="user-avatar">
+                {{ activity.user.name.charAt(0) }}
+              </el-avatar>
+            </div>
+            <div class="activity-content">
+              <div class="activity-main">
+                <div class="activity-text">
+                  <span class="user-name">{{ activity.user.name }}</span>
+                  <span class="action-text">{{ activity.action }}</span>
+                  <span class="target-text">{{ activity.target }}</span>
+                </div>
+                <div class="activity-meta">
+                  <span class="team-badge">{{ activity.team }}</span>
+                  <span class="time-text">{{ formatActivityTime(activity.timestamp) }}</span>
+                </div>
+              </div>
+              <div class="activity-action-icon">
+                <span class="material-symbols-outlined">{{ activity.icon }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -545,244 +585,363 @@ const loadCustomerGrowthReport = async () => {}
 </script>
 
 <style scoped>
-.dashboard-view {
-  padding: 24px;
-  background: #f8fafc;
-  min-height: calc(100vh - 64px);
+.dashboard-container {
+  padding: 32px;
+  min-height: 100vh;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
+/* Header Styles */
 .dashboard-header {
-  margin-bottom: 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 40px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-.dashboard-title {
-  font-size: 32px;
+.header-content .dashboard-title {
+  font-size: 42px;
   font-weight: 700;
-  color: #1a202c;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
   margin: 0 0 8px 0;
+  letter-spacing: -0.02em;
 }
 
-.dashboard-subtitle {
-  font-size: 16px;
-  color: #718096;
+.header-content .dashboard-subtitle {
+  font-size: 18px;
+  color: #64748b;
   margin: 0;
+  font-weight: 400;
+}
+
+.header-actions .modern-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  border-radius: 12px;
+  padding: 12px 24px;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  transition: all 0.3s ease;
+}
+
+.header-actions .modern-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.5);
+}
+
+/* Modern Card Styles */
+.modern-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.modern-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.15);
+}
+
+/* Metrics Section */
+.metrics-section {
+  margin-bottom: 40px;
 }
 
 .metrics-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 24px;
-  margin-bottom: 32px;
 }
 
 .metric-card {
-  border-radius: 16px;
-  border: none;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  padding: 28px;
 }
 
-.metric-content {
+.metric-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.metric-icon-wrapper {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 24px;
+}
+
+.metric-icon-wrapper.revenue {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.metric-icon-wrapper.customers {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+}
+
+.metric-icon-wrapper.orders {
+  background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%);
+}
+
+.metric-icon-wrapper.conversion {
+  background: linear-gradient(135deg, #45b7d1 0%, #96c93d 100%);
+}
+
+.metric-trend {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.metric-trend.positive {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+}
+
+.metric-trend.negative {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.metric-body .metric-value {
+  font-size: 36px;
+  font-weight: 800;
+  color: #1e293b;
+  margin-bottom: 8px;
+  letter-spacing: -0.02em;
+}
+
+.metric-body .metric-label {
+  font-size: 16px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* Charts Section */
+.charts-section {
+  margin-bottom: 40px;
+}
+
+.charts-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.charts-row:last-child {
+  grid-template-columns: 1fr 2fr;
+}
+
+.chart-container.large {
+  grid-column: span 1;
+}
+
+.chart-container.medium {
+  grid-column: span 1;
+}
+
+.chart-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 28px 28px 20px 28px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.chart-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 4px 0;
+}
+
+.chart-subtitle {
+  font-size: 14px;
+  color: #64748b;
+  margin: 0;
+}
+
+.chart-body {
+  padding: 20px 28px 28px 28px;
+}
+
+.modern-select {
+  border-radius: 10px;
+}
+
+/* Activity Section */
+.activity-section {
+  margin-bottom: 40px;
+}
+
+.activity-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.activity-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 28px 28px 20px 28px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.activity-title-section {
   display: flex;
   align-items: center;
   gap: 16px;
 }
 
-.metric-icon {
-  width: 64px;
-  height: 64px;
-  border-radius: 16px;
+.activity-icon {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
 }
 
-.metric-icon.revenue {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-
-.metric-icon.customers {
-  background: linear-gradient(135deg, #ff6b6b 0%, #ff8e8e 100%);
-}
-
-.metric-icon.orders {
-  background: linear-gradient(135deg, #4ecdc4 0%, #6ee0d7 100%);
-}
-
-.metric-icon.conversion {
-  background: linear-gradient(135deg, #45b7d1 0%, #67c4e8 100%);
-}
-
-.metric-icon .material-symbols-outlined {
-  font-size: 28px;
-  font-weight: 100;
-}
-
-.metric-details {
-  flex: 1;
-}
-
-.metric-value {
-  font-size: 28px;
+.activity-title {
+  font-size: 22px;
   font-weight: 700;
-  color: #1a202c;
+  color: #1e293b;
   margin: 0 0 4px 0;
 }
 
-.metric-label {
+.activity-subtitle {
   font-size: 14px;
-  color: #718096;
-  margin: 0 0 8px 0;
-}
-
-.metric-change {
-  font-size: 14px;
-  font-weight: 600;
-  padding: 4px 8px;
-  border-radius: 8px;
-}
-
-.metric-change.positive {
-  color: #10b981;
-  background: #ecfdf5;
-}
-
-.metric-change.negative {
-  color: #ef4444;
-  background: #fef2f2;
-}
-
-.charts-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-  gap: 24px;
-}
-
-.chart-card {
-  border-radius: 16px;
-  border: none;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-}
-
-.chart-card.wide {
-  grid-column: 1 / -1;
-}
-
-@media (min-width: 1200px) {
-  .chart-card.wide {
-    grid-column: span 2;
-  }
-}
-
-.chart-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.chart-header h3 {
-  font-size: 18px;
-  font-weight: 600;
-  color: #1a202c;
+  color: #64748b;
   margin: 0;
 }
 
-.chart-legend {
-  display: flex;
-  gap: 16px;
-}
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  color: #718096;
-}
-
-.legend-color {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-}
-
-.legend-color.new {
-  background: #ff6b6b;
-}
-
-.legend-color.returning {
-  background: #4ecdc4;
-}
-
-:deep(.el-card__header) {
-  padding: 20px;
-  border-bottom: 1px solid #f1f1f1;
-}
-
-:deep(.el-card__body) {
-  padding: 20px;
-}
-
-.activity-card {
-  margin-top: 32px;
-}
-
-.card-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.card-header h3 {
-  font-size: 18px;
+.view-all-btn {
+  color: #667eea;
   font-weight: 600;
-  color: #1a202c;
-  margin: 0;
 }
 
 .activity-list {
-  max-height: 400px;
-  overflow-y: auto;
-  padding: 0 16px;
+  padding: 0 28px 28px 28px;
 }
 
-.activity-item-detailed {
+.activity-item {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 0;
-  border-bottom: 1px solid #f1f1f1;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 20px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
 
-.activity-item-detailed:last-child {
+.activity-item:last-child {
   border-bottom: none;
+  padding-bottom: 0;
+}
+
+.user-avatar {
+  border: 3px solid rgba(102, 126, 234, 0.1);
 }
 
 .activity-content {
   flex: 1;
   display: flex;
   justify-content: space-between;
+  align-items: flex-start;
+}
+
+.user-name {
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.action-text {
+  color: #64748b;
+  margin: 0 4px;
+}
+
+.target-text {
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.activity-meta {
+  display: flex;
   align-items: center;
+  gap: 12px;
+  margin-top: 8px;
 }
 
-.activity-text {
-  font-size: 14px;
-  color: #1a202c;
-}
-
-.activity-time {
-  font-size: 12px;
-  color: #718096;
-}
-
-.team-link {
-  color: #4ecdc4;
-  font-weight: 500;
-}
-
-.activity-icon {
-  width: 24px;
-  height: 24px;
+.team-badge {
+  background: rgba(102, 126, 234, 0.1);
   color: #667eea;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.time-text {
+  font-size: 14px;
+  color: #94a3b8;
+}
+
+.activity-action-icon {
+  width: 40px;
+  height: 40px;
+  background: rgba(102, 126, 234, 0.1);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #667eea;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .charts-row {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-header {
+    flex-direction: column;
+    gap: 20px;
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-container {
+    padding: 20px;
+  }
+
+  .metrics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .header-content .dashboard-title {
+    font-size: 32px;
+  }
 }
 </style>

@@ -14,7 +14,11 @@
             <el-icon>
               <component :is="item.icon" />
             </el-icon>
-            <template #title>{{ item.name }}</template>
+            <template #title>
+              <div class="menu-item-title">
+                {{ item.name }}
+              </div>
+            </template>
           </el-menu-item>
 
           <!-- Submenu -->
@@ -83,27 +87,13 @@ const router = useRouter()
 // Use shallowRef instead of ref for component objects to avoid reactivity warning
 const navigation = shallowRef([
   { name: 'Dashboard', index: '/', icon: House },
-  { name: 'Contacts', index: '/contacts', icon: User },
-  { name: 'Deals', index: '/deals', icon: Notebook },
-  { name: 'Appointments', index: '/appointments', icon: Calendar },
-  { name: 'Emails', index: '/emails', icon: Message },
-  { name: 'Calls', index: '/calls', icon: Phone },
-  // { name: 'Conversations', index: '/conversations', icon: ShoppingCart },
-  // { name: 'Automation', index: '/automation', icon: CoffeeCup },
-  {
-    name: 'Reports',
-    index: '/reports',
-    icon: PieChart,
-    children: [
-      { name: 'Contact Report', index: '/reports/contacts', icon: User },
-      { name: 'Deal Report', index: '/reports/deals', icon: Notebook },
-      { name: 'Appointment Report', index: '/reports/appointments', icon: Calendar },
-      { name: 'Email Report', index: '/reports/emails', icon: Message },
-      { name: 'Call Report', index: '/reports/calls', icon: Phone },
-    ]
-  },
-  { name: 'Integration', index: '/integration', icon: MostlyCloudy },
-  { name: 'Workplace', index: '/workplace', icon: Setting },
+  { name: 'Medicine', index: '/medicines', icon: User },
+  { name: 'Orders', index: '/deals', icon: Notebook },
+  { name: 'Receipt Note', index: '/appointments', icon: Calendar },
+  { name: 'Delivery Note', index: '/emails', icon: Message },
+  { name: 'Suppliers', index: '/suppliers', icon: Phone },
+  { name: 'Analytics', index: '/analytics', icon: PieChart },
+  { name: 'Settings', index: '/settings', icon: Setting },
 ])
 
 // Computed property for active route
@@ -132,44 +122,12 @@ defineExpose({
   flex-direction: column;
 }
 
-.sidebar-brand {
-  display: flex;
-  align-items: center;
-  padding: 20px;
-  border-bottom: 1px solid var(--el-border-color);
-}
-
-.sidebar-brand-icon {
-  margin-right: 12px;
-  color: var(--el-color-primary);
-}
-
-.sidebar-brand-text {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--el-text-color-primary);
-}
-
 .sidebar-nav {
   flex: 1;
   border: none;
 }
 
-.sidebar-bottom {
-  border-top: 1px solid var(--el-border-color);
-}
-
 .sidebar-bottom-menu {
   border: none;
-}
-
-:deep(.el-menu-item) {
-  height: 48px;
-  line-height: 48px;
-}
-
-:deep(.el-menu-item.is-active) {
-  background-color: var(--el-color-primary-light-9);
-  color: var(--el-color-primary);
 }
 </style>

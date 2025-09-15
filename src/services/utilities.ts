@@ -61,42 +61,39 @@ export const formatTime = (dateString: string | undefined) => {
   return new Date(dateString).toLocaleTimeString()
 }
 
-export const format = (value: any, format: string): string => {
-  switch (format) {
-    case 'number':
-      return formatNumber(value)
-    case 'currency':
-      return formatCurrency(value)
-    case 'percentage':
-      return formatPercentage(value)
-    case 'date':
-      return formatDate(value)
-    default:
-      return String(value)
-  }
-}
-
 export const formatNumber = (value: number): string => {
-  return new Intl.NumberFormat('en-US', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(value)
+  if (value >= 1000000) {
+    return (value / 1000000).toFixed(1) + 'M'
+  } else if (value >= 1000) {
+    return (value / 1000).toFixed(1) + 'K'
+  }
+  return value.toString()
 }
 
 export const formatCurrency = (value: number): string => {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
-    maximumFractionDigits: 0,
   }).format(value)
 }
 
 export const formatPercentage = (value: number): string => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'percent',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value)
+  return (value * 100).toFixed(1) + '%'
+}
+
+export const format = (value: any, formatType: string): string => {
+  if (!value) return '0'
+
+  switch (formatType) {
+    case 'currency':
+      return formatCurrency(value)
+    case 'number':
+      return formatNumber(value)
+    case 'percentage':
+      return formatPercentage(value)
+    default:
+      return value.toString()
+  }
 }
 
 // const utilities = new Utilities()

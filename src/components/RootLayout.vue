@@ -11,9 +11,6 @@
       v-if="!isAuthPage"
     />
 
-    <!-- RightSideBar -->
-    <RightSideBar v-if="!isAuthPage" />
-
     <!-- Main Content Area -->
     <div
       class="main-content small-scrollbar"
@@ -36,7 +33,6 @@
 import { computed, ref } from 'vue'
 import SideBar from './SideBar.vue'
 import TopBar from './TopBar.vue'
-import RightSideBar from './RightSideBar.vue'
 import { useRoute } from 'vue-router'
 
 const route = useRoute()

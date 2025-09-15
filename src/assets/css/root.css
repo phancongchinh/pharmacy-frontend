@@ -1,0 +1,11 @@
+:root {
+  --topbar-height: 54px;
+  --botbar-height: 56px;
+  --sidebar-width: 256px;
+  --menu-item-height: 40px;
+  --el-color-primary: #409eff;
+  --el-color-primary-light-9: #e6f4ff;
+  --el-text-color-primary: #303133;
+  --el-text-color-secondary: #606266;
+  --el-border-color: #dcdee5;
+}
