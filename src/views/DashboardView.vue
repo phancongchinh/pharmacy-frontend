@@ -176,94 +176,6 @@
         </div>
       </div>
     </div>
-
-    <!-- Alerts and Quick Actions Section -->
-    <div class="alerts-section">
-      <div class="alerts-row">
-        <!-- Critical Alerts -->
-        <div class="alert-container">
-          <div class="alert-card modern-card critical">
-            <div class="alert-header">
-              <div class="alert-icon">
-                <span class="material-symbols-outlined">warning</span>
-              </div>
-              <div class="alert-title-section">
-                <h3 class="alert-title">Critical Alerts</h3>
-                <p class="alert-subtitle">Requires immediate attention</p>
-              </div>
-            </div>
-            <div class="alert-list">
-              <div v-for="alert in criticalAlerts" :key="alert.id" class="alert-item">
-                <div class="alert-icon-small">
-                  <span class="material-symbols-outlined">{{ alert.icon }}</span>
-                </div>
-                <div class="alert-content">
-                  <div class="alert-message">{{ alert.message }}</div>
-                  <div class="alert-time">{{ alert.time }}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Expiring Medicines -->
-        <div class="alert-container">
-          <div class="alert-card modern-card warning">
-            <div class="alert-header">
-              <div class="alert-icon">
-                <span class="material-symbols-outlined">schedule</span>
-              </div>
-              <div class="alert-title-section">
-                <h3 class="alert-title">Expiring Soon</h3>
-                <p class="alert-subtitle">Medicines expiring in 30 days</p>
-              </div>
-            </div>
-            <div class="alert-list">
-              <div v-for="medicine in expiringMedicines" :key="medicine.id" class="alert-item">
-                <div class="alert-content">
-                  <div class="alert-message">{{ medicine.name }}</div>
-                  <div class="alert-time">Expires: {{ formatDate(medicine.expiryDate) }}</div>
-                </div>
-                <div class="alert-quantity">{{ medicine.quantity }}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Quick Actions -->
-        <div class="alert-container">
-          <div class="alert-card modern-card info">
-            <div class="alert-header">
-              <div class="alert-icon">
-                <span class="material-symbols-outlined">bolt</span>
-              </div>
-              <div class="alert-title-section">
-                <h3 class="alert-title">Quick Actions</h3>
-                <p class="alert-subtitle">Common tasks</p>
-              </div>
-            </div>
-            <div class="quick-actions">
-              <el-button class="action-btn" @click="navigateToSales">
-                <span class="material-symbols-outlined">add_shopping_cart</span>
-                New Sale
-              </el-button>
-              <el-button class="action-btn" @click="navigateToMedicines">
-                <span class="material-symbols-outlined">add_box</span>
-                Add Medicine
-              </el-button>
-              <el-button class="action-btn" @click="navigateToReceipts">
-                <span class="material-symbols-outlined">receipt</span>
-                Receipt Note
-              </el-button>
-              <el-button class="action-btn" @click="navigateToDelivery">
-                <span class="material-symbols-outlined">local_shipping</span>
-                Delivery Note
-              </el-button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -283,50 +195,6 @@ const pharmacyStats = ref({
 })
 
 const salesTimeframe = ref('30d')
-
-// Critical Alerts
-const criticalAlerts = ref([
-  {
-    id: 1,
-    icon: 'inventory_2',
-    message: '15 medicines out of stock',
-    time: '2 hours ago',
-  },
-  {
-    id: 2,
-    icon: 'warning',
-    message: '3 medicines expired',
-    time: '4 hours ago',
-  },
-  {
-    id: 3,
-    icon: 'priority_high',
-    message: 'Prescription requires approval',
-    time: '1 hour ago',
-  },
-])
-
-// Expiring Medicines
-const expiringMedicines = ref([
-  {
-    id: 1,
-    name: 'Paracetamol 500mg',
-    expiryDate: '2025-10-15',
-    quantity: 45,
-  },
-  {
-    id: 2,
-    name: 'Amoxicillin 250mg',
-    expiryDate: '2025-10-20',
-    quantity: 23,
-  },
-  {
-    id: 3,
-    name: 'Insulin Glargine',
-    expiryDate: '2025-10-25',
-    quantity: 8,
-  },
-])
 
 // Sales Chart Configuration
 const salesChartSeries = ref([
@@ -566,23 +434,6 @@ const revenueChartOptions = ref({
     },
   },
 })
-
-// Navigation methods
-const navigateToSales = () => {
-  router.push('/sales')
-}
-
-const navigateToMedicines = () => {
-  router.push('/medicines')
-}
-
-const navigateToReceipts = () => {
-  router.push('/receipt-notes')
-}
-
-const navigateToDelivery = () => {
-  router.push('/delivery-notes')
-}
 
 // Utility methods
 const formatCurrency = (value: number) => {
@@ -1054,51 +905,14 @@ onMounted(() => {
   font-size: 14px;
 }
 
-.quick-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-.action-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  background: white;
-  color: #64748b;
-  font-weight: 500;
-  transition: all 0.2s ease;
-}
-
-.action-btn:hover {
-  border-color: #3b82f6;
-  color: #3b82f6;
-  background: rgba(59, 130, 246, 0.05);
-}
-
-.action-btn .material-symbols-outlined {
-  font-size: 18px;
-}
-
 @media (max-width: 1024px) {
   .charts-row {
-    grid-template-columns: 1fr;
-  }
-
-  .alerts-row {
     grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 768px) {
   .metrics-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .quick-actions {
     grid-template-columns: 1fr;
   }
 }

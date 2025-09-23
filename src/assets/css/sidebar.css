@@ -8,6 +8,7 @@
   transition: transform 0.3s ease-in-out;
   overflow-x: hidden;
   overflow-y: auto;
+  padding-top: 12px;
 }
 
 .sidebar-open {
