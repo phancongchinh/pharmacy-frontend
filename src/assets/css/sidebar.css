@@ -21,14 +21,37 @@
 
 .el-menu > .el-menu-item {
   font-weight: 500;
-  height: 40px;
-  line-height: 40px;
-  border-top-right-radius: 20px;
-  border-bottom-right-radius: 20px;
+  height: 46px;
+  line-height: 46px;
+  border-top-right-radius: 23px;
+  border-bottom-right-radius: 23px;
   transition: all 0.3s ease;
 }
 
 .el-menu > .el-menu-item:hover {
   margin-right: 25px;
   transition: all 0.3s ease;
+}
+
+.el-menu-item.is-active {
+  background: linear-gradient(135deg, #e5eeff 0%, #d9e6ff 100%);
+  border-top-right-radius: 24px;
+  border-bottom-right-radius: 24px;
+  margin-right: 25px;
+}
+
+.el-menu-item.is-active > .menu-item-title {
+  font-weight: bold !important;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  background-clip: text !important;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.el-menu-item:not(.is-active) {
+  color: #667eea;
+}
+
+.el-menu-item > .el-icon {
+  color: #667eea;
 }

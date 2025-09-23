@@ -33,29 +33,4 @@
   max-height: calc(100vh - 400px);
 }
 
-li .el-menu-item {
-  height: 36px;
-  line-height: 36px;
-}
 
-.el-menu-item.is-active {
-  background: linear-gradient(135deg, #e5eeff 0%, #d9e6ff 100%);
-  border-top-right-radius: 24px;
-  border-bottom-right-radius: 24px;
-  margin-right: 25px;
-}
-
-.el-menu-item.is-active > .menu-item-title {
-  font-weight: bold !important;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-  background-clip: text !important;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.el-menu-item.is-active > .el-icon {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-  background-clip: text !important;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
