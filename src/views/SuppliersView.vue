@@ -116,19 +116,29 @@
             </template>
           </el-table-column>
 
-          <el-table-column label="Actions" width="140" fixed="right">
+          <el-table-column label="Actions" width="100" fixed="right">
             <template #default="{ row }">
-              <div class="table-actions">
-                <el-button type="primary" size="small" text @click="handleViewSupplier(row)">
-                  <span class="material-symbols-outlined">visibility</span>
+              <el-dropdown @command="(command) => handleActionCommand(command, row)">
+                <el-button type="primary" size="small" text>
+                  <span class="material-symbols-outlined">more_vert</span>
                 </el-button>
-                <el-button type="primary" size="small" text @click="handleEditSupplier(row)">
-                  <span class="material-symbols-outlined">edit</span>
-                </el-button>
-                <el-button type="danger" size="small" text @click="handleDeleteSupplier(row)">
-                  <span class="material-symbols-outlined">delete</span>
-                </el-button>
-              </div>
+                <template #dropdown>
+                  <el-dropdown-menu>
+                    <el-dropdown-item command="view">
+                      <span class="material-symbols-outlined">visibility</span>
+                      View
+                    </el-dropdown-item>
+                    <el-dropdown-item command="edit">
+                      <span class="material-symbols-outlined">edit</span>
+                      Edit
+                    </el-dropdown-item>
+                    <el-dropdown-item command="delete" divided>
+                      <span class="material-symbols-outlined">delete</span>
+                      Delete
+                    </el-dropdown-item>
+                  </el-dropdown-menu>
+                </template>
+              </el-dropdown>
             </template>
           </el-table-column>
         </el-table>
@@ -136,7 +146,7 @@
     </div>
 
     <!-- Sticky Pagination -->
-    <div class="pagination-container" :class="{ sticky: isScrolledToBottom }">
+    <div class="pagination-container">
       <el-pagination
         v-model:current-page="pagination.page"
         v-model:page-size="pagination.size"
@@ -320,8 +330,6 @@ const selectedSuppliers = ref<Supplier[]>([])
 const drawerVisible = ref(false)
 const dialogVisible = ref(false)
 const dialogMode = ref<'add' | 'edit' | 'view'>('add')
-const isScrolledToBottom = ref(false)
-const tableContainer = ref<HTMLElement>()
 const suppliersTable = ref()
 const supplierForm = ref<FormInstance>()
 
@@ -417,17 +425,6 @@ const handleSearchChange = () => {
 
 const handleFilterChange = () => {
   pagination.value.page = 1
-  loadSuppliers()
-}
-
-const handleSortChange = ({ prop, order }: { prop: string; order: string | null }) => {
-  if (order) {
-    pagination.value.sort = prop
-    pagination.value.direction = order === 'ascending' ? 'asc' : 'desc'
-  } else {
-    pagination.value.sort = undefined
-    pagination.value.direction = 'asc'
-  }
   loadSuppliers()
 }
 
@@ -562,28 +559,17 @@ const handleDeleteSupplier = async (supplier: Supplier) => {
   }
 }
 
-const handleBulkDelete = async () => {
-  try {
-    await ElMessageBox.confirm(
-      `Are you sure you want to delete ${selectedSuppliers.value.length} selected suppliers?`,
-      'Delete Suppliers',
-      {
-        confirmButtonText: 'Delete',
-        cancelButtonText: 'Cancel',
-        type: 'warning',
-      },
-    )
-
-    const ids = selectedSuppliers.value.map((s) => s.id)
-    await suppliersService.bulkDeleteSuppliers(ids)
-    ElMessage.success(`${ids.length} suppliers deleted successfully`)
-    selectedSuppliers.value = []
-    loadSuppliers()
-  } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('Failed to delete suppliers')
-      console.error('Error deleting suppliers:', error)
-    }
+const handleActionCommand = (command: string, supplier: Supplier) => {
+  switch (command) {
+    case 'view':
+      handleViewSupplier(supplier)
+      break
+    case 'edit':
+      handleEditSupplier(supplier)
+      break
+    case 'delete':
+      handleDeleteSupplier(supplier)
+      break
   }
 }
 
@@ -619,21 +605,9 @@ const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString()
 }
 
-// Scroll handling for sticky pagination
-const handleScroll = () => {
-  if (!tableContainer.value) return
-
-  const { scrollTop, scrollHeight, clientHeight } = tableContainer.value
-  isScrolledToBottom.value = scrollTop + clientHeight >= scrollHeight - 10
-}
-
 // Lifecycle hooks
 onMounted(() => {
   loadSuppliers()
-
-  if (tableContainer.value) {
-    tableContainer.value.addEventListener('scroll', handleScroll)
-  }
 })
 
 // Watch for dialog visibility to reset form
@@ -718,11 +692,15 @@ watch(dialogVisible, (newVal) => {
 }
 
 .pagination-container {
+  position: sticky;
+  bottom: 0;
   padding: 16px 24px;
   border-top: 1px solid #e5e7eb;
   background: white;
   display: flex;
   justify-content: center;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 10;
   transition: all 0.3s ease;
 }
 
@@ -731,6 +709,17 @@ watch(dialogVisible, (newVal) => {
   bottom: 0;
   box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
   z-index: 10;
+}
+
+/* Dropdown menu item styling */
+:deep(.el-dropdown-menu__item) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+:deep(.el-dropdown-menu__item .material-symbols-outlined) {
+  font-size: 18px;
 }
 
 .supplier-dialog .supplier-form {
