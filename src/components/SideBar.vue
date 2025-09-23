@@ -59,16 +59,11 @@ import { computed, shallowRef } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   House,
-  User,
-  Notebook,
-  Setting,
-  Calendar,
   Phone,
-  Message,
   ShoppingCart,
-  PieChart,
-  CoffeeCup,
-  MostlyCloudy,
+  DocumentAdd,
+  DocumentRemove,
+  Orange,
 } from '@element-plus/icons-vue'
 
 // Define props
@@ -87,13 +82,11 @@ const router = useRouter()
 // Use shallowRef instead of ref for component objects to avoid reactivity warning
 const navigation = shallowRef([
   { name: 'Dashboard', index: '/', icon: House },
-  { name: 'Medicine', index: '/medicines', icon: User },
+  { name: 'Medicine', index: '/medicines', icon: Orange },
   { name: 'Sales', index: '/sales', icon: ShoppingCart },
-  { name: 'Receipt Note', index: '/appointments', icon: Calendar },
-  { name: 'Delivery Note', index: '/emails', icon: Message },
+  { name: 'Receipt Note', index: '/receipt-notes', icon: DocumentAdd },
+  { name: 'Delivery Note', index: '/delivery-notes', icon: DocumentRemove },
   { name: 'Suppliers', index: '/suppliers', icon: Phone },
-  // { name: 'Analytics', index: '/analytics', icon: PieChart },
-  // { name: 'Settings', index: '/settings', icon: Setting },
 ])
 
 // Computed property for active route

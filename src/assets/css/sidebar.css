@@ -19,6 +19,7 @@
 }
 
 .el-menu > .el-menu-item {
+  font-weight: 500;
   height: 40px;
   line-height: 40px;
   border-top-right-radius: 20px;

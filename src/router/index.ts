@@ -28,6 +28,24 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/sales',
+      name: 'sales',
+      component: () => import('../views/SalesView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/receipt-notes',
+      name: 'receipt-notes',
+      component: () => import('../views/ReceiptNotesView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/delivery-notes',
+      name: 'delivery-notes',
+      component: () => import('../views/DeliveryNotesView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/login',
       name: 'login',
       component: () => import('../views/LoginView.vue'),

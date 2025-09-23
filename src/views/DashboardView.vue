@@ -1,59 +1,101 @@
 <template>
   <div class="page-container">
-    <!-- Header Section with improved typography -->
+    <!-- Header Section -->
     <div class="page-header">
       <div class="page-header-content">
-        <h1 class="page-title">Dashboard</h1>
-        <p class="page-subtitle">Welcome back! Here's what's happening with your business today.</p>
+        <h1 class="page-title">Pharmacy Dashboard</h1>
+        <p class="page-subtitle">Monitor your pharmacy operations and performance at a glance.</p>
       </div>
-      <div class="header-actions">
-        <el-button type="primary" class="modern-button">
-          <span class="material-symbols-outlined">add</span>
-          New Report
-        </el-button>
-      </div>
+      <!--      <div class="header-actions">-->
+      <!--        <el-button type="primary" class="modern-button">-->
+      <!--          <span class="material-symbols-outlined">analytics</span>-->
+      <!--          Generate Report-->
+      <!--        </el-button>-->
+      <!--      </div>-->
     </div>
 
-    <!-- Key Metrics Grid with modern cards -->
+    <!-- Key Metrics Grid for Pharmacy -->
     <div class="metrics-section">
       <div class="metrics-grid">
-        <div class="metric-card modern-card" v-for="(metric, index) in keyMetrics" :key="index">
+        <div class="metric-card modern-card">
           <div class="metric-header">
-            <div
-              class="metric-trend"
-              :class="calculateStatsChanges(statsOverviews, metric.stat).class"
-            >
-              <span class="material-symbols-outlined">
-                {{
-                  calculateStatsChanges(statsOverviews, metric.stat).class === 'positive'
-                    ? 'trending_up'
-                    : 'trending_down'
-                }}
-              </span>
-              {{ calculateStatsChanges(statsOverviews, metric.stat).value }}
+            <div class="metric-icon-wrapper revenue">
+              <span class="material-symbols-outlined">attach_money</span>
+            </div>
+            <div class="metric-trend positive">
+              <span class="material-symbols-outlined">trending_up</span>
+              +12.5%
             </div>
           </div>
           <div class="metric-body">
-            <div class="metric-value">{{ format(statsOverviews[metric.stat], metric.format) }}</div>
-            <div class="metric-label">{{ metric.title }}</div>
+            <div class="metric-value">${{ formatCurrency(pharmacyStats.totalRevenue) }}</div>
+            <div class="metric-label">Total Revenue</div>
+          </div>
+        </div>
+
+        <div class="metric-card modern-card">
+          <div class="metric-header">
+            <div class="metric-icon-wrapper medicines">
+              <span class="material-symbols-outlined">medication</span>
+            </div>
+            <div class="metric-trend positive">
+              <span class="material-symbols-outlined">trending_up</span>
+              +8.3%
+            </div>
+          </div>
+          <div class="metric-body">
+            <div class="metric-value">{{ pharmacyStats.totalMedicines }}</div>
+            <div class="metric-label">Total Medicines</div>
+          </div>
+        </div>
+
+        <div class="metric-card modern-card">
+          <div class="metric-header">
+            <div class="metric-icon-wrapper sales">
+              <span class="material-symbols-outlined">shopping_cart</span>
+            </div>
+            <div class="metric-trend positive">
+              <span class="material-symbols-outlined">trending_up</span>
+              +15.7%
+            </div>
+          </div>
+          <div class="metric-body">
+            <div class="metric-value">{{ pharmacyStats.totalSales }}</div>
+            <div class="metric-label">Sales Today</div>
+          </div>
+        </div>
+
+        <div class="metric-card modern-card">
+          <div class="metric-header">
+            <div class="metric-icon-wrapper customers">
+              <span class="material-symbols-outlined">group</span>
+            </div>
+            <div class="metric-trend positive">
+              <span class="material-symbols-outlined">trending_up</span>
+              +5.2%
+            </div>
+          </div>
+          <div class="metric-body">
+            <div class="metric-value">{{ pharmacyStats.activeCustomers }}</div>
+            <div class="metric-label">Active Customers</div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Charts Section with modern layout -->
+    <!-- Charts Section -->
     <div class="charts-section">
       <div class="charts-row">
-        <!-- Revenue Chart -->
+        <!-- Sales Analytics Chart -->
         <div class="chart-container large">
           <div class="chart-card modern-card">
             <div class="chart-header">
               <div class="chart-title-section">
-                <h3 class="chart-title">Revenue Analytics</h3>
-                <p class="chart-subtitle">Monthly revenue performance</p>
+                <h3 class="chart-title">Sales Analytics</h3>
+                <p class="chart-subtitle">Daily sales performance</p>
               </div>
               <div class="chart-controls">
-                <el-select v-model="revenueTimeframe" size="default" class="modern-select">
+                <el-select v-model="salesTimeframe" size="default" class="modern-select">
                   <el-option label="Last 7 days" value="7d" />
                   <el-option label="Last 30 days" value="30d" />
                   <el-option label="Last 3 months" value="3m" />
@@ -64,20 +106,20 @@
               <apexchart
                 type="area"
                 height="320"
-                :options="revenueChartOptions"
-                :series="revenueChartSeries"
+                :options="salesChartOptions"
+                :series="salesChartSeries"
               />
             </div>
           </div>
         </div>
 
-        <!-- Sales Distribution -->
+        <!-- Medicine Categories Distribution -->
         <div class="chart-container medium">
           <div class="chart-card modern-card">
             <div class="chart-header">
               <div class="chart-title-section">
-                <h3 class="chart-title">Sales Distribution</h3>
-                <p class="chart-subtitle">By category</p>
+                <h3 class="chart-title">Medicine Categories</h3>
+                <p class="chart-subtitle">Distribution by category</p>
               </div>
             </div>
             <div class="chart-body">
@@ -93,41 +135,41 @@
       </div>
 
       <div class="charts-row">
-        <!-- Customer Growth -->
+        <!-- Low Stock Alert -->
         <div class="chart-container medium">
           <div class="chart-card modern-card">
             <div class="chart-header">
               <div class="chart-title-section">
-                <h3 class="chart-title">Customer Growth</h3>
-                <p class="chart-subtitle">New vs returning customers</p>
-              </div>
-            </div>
-            <div class="chart-body">
-              <apexchart
-                type="line"
-                height="320"
-                :options="customerGrowthOptions"
-                :series="customerGrowthSeries"
-              />
-            </div>
-          </div>
-        </div>
-
-        <!-- Performance Metrics -->
-        <div class="chart-container large">
-          <div class="chart-card modern-card">
-            <div class="chart-header">
-              <div class="chart-title-section">
-                <h3 class="chart-title">Performance Overview</h3>
-                <p class="chart-subtitle">Sales & profit comparison</p>
+                <h3 class="chart-title">Stock Levels</h3>
+                <p class="chart-subtitle">Inventory monitoring</p>
               </div>
             </div>
             <div class="chart-body">
               <apexchart
                 type="bar"
                 height="320"
-                :options="performanceChartOptions"
-                :series="performanceChartSeries"
+                :options="stockChartOptions"
+                :series="stockChartSeries"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Monthly Revenue vs Profit -->
+        <div class="chart-container large">
+          <div class="chart-card modern-card">
+            <div class="chart-header">
+              <div class="chart-title-section">
+                <h3 class="chart-title">Revenue vs Profit</h3>
+                <p class="chart-subtitle">Monthly performance comparison</p>
+              </div>
+            </div>
+            <div class="chart-body">
+              <apexchart
+                type="line"
+                height="320"
+                :options="revenueChartOptions"
+                :series="revenueChartSeries"
               />
             </div>
           </div>
@@ -135,44 +177,88 @@
       </div>
     </div>
 
-    <!-- Activity Feed Section -->
-    <div class="activity-section">
-      <div class="activity-card modern-card">
-        <div class="activity-header">
-          <div class="activity-title-section">
-            <div class="activity-icon">
-              <span class="material-symbols-outlined">notifications</span>
+    <!-- Alerts and Quick Actions Section -->
+    <div class="alerts-section">
+      <div class="alerts-row">
+        <!-- Critical Alerts -->
+        <div class="alert-container">
+          <div class="alert-card modern-card critical">
+            <div class="alert-header">
+              <div class="alert-icon">
+                <span class="material-symbols-outlined">warning</span>
+              </div>
+              <div class="alert-title-section">
+                <h3 class="alert-title">Critical Alerts</h3>
+                <p class="alert-subtitle">Requires immediate attention</p>
+              </div>
             </div>
-            <div>
-              <h3 class="activity-title">Recent Activity</h3>
-              <p class="activity-subtitle">Latest updates from your team</p>
+            <div class="alert-list">
+              <div v-for="alert in criticalAlerts" :key="alert.id" class="alert-item">
+                <div class="alert-icon-small">
+                  <span class="material-symbols-outlined">{{ alert.icon }}</span>
+                </div>
+                <div class="alert-content">
+                  <div class="alert-message">{{ alert.message }}</div>
+                  <div class="alert-time">{{ alert.time }}</div>
+                </div>
+              </div>
             </div>
           </div>
-          <el-button text class="view-all-btn">View All</el-button>
         </div>
 
-        <div class="activity-list">
-          <div v-for="activity in recentActivities" :key="activity.id" class="activity-item">
-            <div class="activity-avatar">
-              <el-avatar :size="48" :src="activity.user.avatar" class="user-avatar">
-                {{ activity.user.name.charAt(0) }}
-              </el-avatar>
+        <!-- Expiring Medicines -->
+        <div class="alert-container">
+          <div class="alert-card modern-card warning">
+            <div class="alert-header">
+              <div class="alert-icon">
+                <span class="material-symbols-outlined">schedule</span>
+              </div>
+              <div class="alert-title-section">
+                <h3 class="alert-title">Expiring Soon</h3>
+                <p class="alert-subtitle">Medicines expiring in 30 days</p>
+              </div>
             </div>
-            <div class="activity-content">
-              <div class="activity-main">
-                <div class="activity-text">
-                  <span class="user-name">{{ activity.user.name }}</span>
-                  <span class="action-text">{{ activity.action }}</span>
-                  <span class="target-text">{{ activity.target }}</span>
+            <div class="alert-list">
+              <div v-for="medicine in expiringMedicines" :key="medicine.id" class="alert-item">
+                <div class="alert-content">
+                  <div class="alert-message">{{ medicine.name }}</div>
+                  <div class="alert-time">Expires: {{ formatDate(medicine.expiryDate) }}</div>
                 </div>
-                <div class="activity-meta">
-                  <span class="team-badge">{{ activity.team }}</span>
-                  <span class="time-text">{{ formatActivityTime(activity.timestamp) }}</span>
-                </div>
+                <div class="alert-quantity">{{ medicine.quantity }}</div>
               </div>
-              <div class="activity-action-icon">
-                <span class="material-symbols-outlined">{{ activity.icon }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="alert-container">
+          <div class="alert-card modern-card info">
+            <div class="alert-header">
+              <div class="alert-icon">
+                <span class="material-symbols-outlined">bolt</span>
               </div>
+              <div class="alert-title-section">
+                <h3 class="alert-title">Quick Actions</h3>
+                <p class="alert-subtitle">Common tasks</p>
+              </div>
+            </div>
+            <div class="quick-actions">
+              <el-button class="action-btn" @click="navigateToSales">
+                <span class="material-symbols-outlined">add_shopping_cart</span>
+                New Sale
+              </el-button>
+              <el-button class="action-btn" @click="navigateToMedicines">
+                <span class="material-symbols-outlined">add_box</span>
+                Add Medicine
+              </el-button>
+              <el-button class="action-btn" @click="navigateToReceipts">
+                <span class="material-symbols-outlined">receipt</span>
+                Receipt Note
+              </el-button>
+              <el-button class="action-btn" @click="navigateToDelivery">
+                <span class="material-symbols-outlined">local_shipping</span>
+                Delivery Note
+              </el-button>
             </div>
           </div>
         </div>
@@ -182,115 +268,75 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeMount } from 'vue'
-import { keyMetrics, dashboardService, type StatsOverview } from '@/services/dashboardService.ts'
-import {
-  formatNumber,
-  formatPercentage,
-  formatCurrency,
-  calculateStatsChanges,
-  format,
-} from '@/services/utilities.ts'
-
+import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
+import { useRouter } from 'vue-router'
 
-// Types
-interface Activity {
-  id: number
-  user: {
-    name: string
-    avatar?: string
-  }
-  action: string
-  target: string
-  team: string
-  timestamp: string
-  icon: string
-}
+const router = useRouter()
 
-// Reactive data
-const revenueTimeframe = ref('30d')
+// Pharmacy Statistics
+const pharmacyStats = ref({
+  totalRevenue: 125840,
+  totalMedicines: 1247,
+  totalSales: 89,
+  activeCustomers: 456,
+})
 
-// Recent Activities Data
-const recentActivities = ref<Activity[]>([
+const salesTimeframe = ref('30d')
+
+// Critical Alerts
+const criticalAlerts = ref([
   {
     id: 1,
-    user: {
-      name: 'Sarah Johnson',
-      avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b047?w=150',
-    },
-    action: 'completed task',
-    target: 'Q1 Sales Review',
-    team: 'TechCorp Sales Division',
-    timestamp: '2025-07-16T10:30:00Z',
-    icon: 'check_circle',
+    icon: 'inventory_2',
+    message: '15 medicines out of stock',
+    time: '2 hours ago',
   },
   {
     id: 2,
-    user: { name: 'Mike Chen' },
-    action: 'added new project',
-    target: 'Enterprise Client Onboarding',
-    team: 'TechCorp Sales Division',
-    timestamp: '2025-07-16T09:15:00Z',
-    icon: 'add_circle',
+    icon: 'warning',
+    message: '3 medicines expired',
+    time: '4 hours ago',
   },
   {
     id: 3,
-    user: {
-      name: 'Amanda Taylor',
-      avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150',
-    },
-    action: 'updated campaign',
-    target: 'Social Media Strategy',
-    team: 'Marketing Growth Hub',
-    timestamp: '2025-07-16T08:20:00Z',
-    icon: 'edit',
-  },
-  {
-    id: 4,
-    user: { name: 'Alex Thompson' },
-    action: 'deployed feature',
-    target: 'User Dashboard v2.0',
-    team: 'Product Development Team',
-    timestamp: '2025-07-16T07:45:00Z',
-    icon: 'rocket_launch',
-  },
-  {
-    id: 5,
-    user: {
-      name: 'Rachel Green',
-      avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150',
-    },
-    action: 'resolved issue',
-    target: 'Customer Login Bug',
-    team: 'Customer Success Squad',
-    timestamp: '2025-07-16T06:30:00Z',
-    icon: 'bug_report',
+    icon: 'priority_high',
+    message: 'Prescription requires approval',
+    time: '1 hour ago',
   },
 ])
 
-// Methods
-const formatActivityTime = (timestamp: string) => {
-  const date = new Date(timestamp)
-  const now = new Date()
-  const diffMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60))
-
-  if (diffMinutes < 60) return `${diffMinutes}m ago`
-  const diffHours = Math.floor(diffMinutes / 60)
-  if (diffHours < 24) return `${diffHours}h ago`
-  const diffDays = Math.floor(diffHours / 24)
-  return `${diffDays}d ago`
-}
-
-// Revenue Chart Configuration
-const revenueChartSeries = ref([
+// Expiring Medicines
+const expiringMedicines = ref([
   {
-    name: 'Revenue',
-    data: [31000, 40000, 35000, 50000, 49000, 60000, 70000, 91000, 125000],
+    id: 1,
+    name: 'Paracetamol 500mg',
+    expiryDate: '2025-10-15',
+    quantity: 45,
+  },
+  {
+    id: 2,
+    name: 'Amoxicillin 250mg',
+    expiryDate: '2025-10-20',
+    quantity: 23,
+  },
+  {
+    id: 3,
+    name: 'Insulin Glargine',
+    expiryDate: '2025-10-25',
+    quantity: 8,
   },
 ])
 
-const revenueChartOptions = ref({
+// Sales Chart Configuration
+const salesChartSeries = ref([
+  {
+    name: 'Sales Amount',
+    data: [4200, 5300, 4800, 6100, 5900, 7200, 8500, 6800, 7900, 8200, 9100, 8400],
+  },
+])
+
+const salesChartOptions = ref({
   chart: {
     type: 'area',
     toolbar: {
@@ -300,7 +346,7 @@ const revenueChartOptions = ref({
       enabled: false,
     },
   },
-  colors: ['#667eea'],
+  colors: ['#10b981'],
   fill: {
     type: 'gradient',
     gradient: {
@@ -311,12 +357,12 @@ const revenueChartOptions = ref({
       colorStops: [
         {
           offset: 0,
-          color: '#667eea',
+          color: '#10b981',
           opacity: 0.8,
         },
         {
           offset: 100,
-          color: '#764ba2',
+          color: '#059669',
           opacity: 0.1,
         },
       ],
@@ -325,182 +371,6 @@ const revenueChartOptions = ref({
   stroke: {
     curve: 'smooth',
     width: 3,
-  },
-  grid: {
-    borderColor: '#f1f1f1',
-  },
-  xaxis: {
-    categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'],
-    labels: {
-      style: {
-        colors: '#666',
-      },
-    },
-  },
-  yaxis: {
-    labels: {
-      style: {
-        colors: '#666',
-      },
-      formatter: function (value: number) {
-        return '$' + (value / 1000).toFixed(0) + 'k'
-      },
-    },
-  },
-  tooltip: {
-    theme: 'light',
-  },
-})
-
-// Category Chart Configuration
-const categoryChartSeries = ref([44, 55, 13, 43, 22])
-
-const categoryChartOptions = ref({
-  chart: {
-    type: 'donut',
-  },
-  colors: ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#feca57'],
-  fill: {
-    type: 'gradient',
-    gradient: {
-      shade: 'dark',
-      type: 'radial',
-      shadeIntensity: 0.5,
-      gradientToColors: ['#ff8e8e', '#6ee0d7', '#67c4e8', '#b9dcc7', '#fed680'],
-      inverseColors: true,
-      opacityFrom: 1,
-      opacityTo: 0.7,
-      stops: [0, 100],
-    },
-  },
-  labels: ['Electronics', 'Clothing', 'Books', 'Home & Garden', 'Sports'],
-  legend: {
-    position: 'bottom',
-  },
-  plotOptions: {
-    pie: {
-      donut: {
-        size: '65%',
-      },
-    },
-  },
-  dataLabels: {
-    enabled: false,
-  },
-})
-
-// Customer Growth Chart Configuration
-const customerGrowthSeries = ref([
-  {
-    name: 'New Customers',
-    data: [44, 55, 57, 56, 61, 58, 63, 60, 66],
-  },
-  {
-    name: 'Returning Customers',
-    data: [76, 85, 101, 98, 87, 105, 91, 114, 94],
-  },
-])
-
-const customerGrowthOptions = ref({
-  chart: {
-    type: 'line',
-    toolbar: {
-      show: false,
-    },
-  },
-  colors: ['#ff6b6b', '#4ecdc4'],
-  stroke: {
-    width: 4,
-    curve: 'smooth',
-  },
-  fill: {
-    type: 'gradient',
-    gradient: {
-      shade: 'dark',
-      gradientToColors: ['#ff8e8e', '#6ee0d7'],
-      shadeIntensity: 1,
-      type: 'horizontal',
-      opacityFrom: 1,
-      opacityTo: 1,
-      stops: [0, 100, 100, 100],
-    },
-  },
-  markers: {
-    size: 6,
-    colors: ['#fff'],
-    strokeColors: ['#ff6b6b', '#4ecdc4'],
-    strokeWidth: 3,
-    hover: {
-      size: 8,
-    },
-  },
-  grid: {
-    borderColor: '#f1f1f1',
-  },
-  xaxis: {
-    categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'],
-    labels: {
-      style: {
-        colors: '#666',
-      },
-    },
-  },
-  yaxis: {
-    labels: {
-      style: {
-        colors: '#666',
-      },
-    },
-  },
-})
-
-// Performance Chart Configuration
-const performanceChartSeries = ref([
-  {
-    name: 'Sales',
-    data: [44, 55, 57, 56, 61, 58, 63, 60, 66, 78, 85, 92],
-  },
-  {
-    name: 'Profit',
-    data: [35, 41, 36, 26, 45, 48, 52, 53, 41, 65, 72, 78],
-  },
-])
-
-const performanceChartOptions = ref({
-  chart: {
-    type: 'bar',
-    toolbar: {
-      show: false,
-    },
-  },
-  colors: ['#667eea', '#764ba2'],
-  fill: {
-    type: 'gradient',
-    gradient: {
-      shade: 'light',
-      type: 'vertical',
-      shadeIntensity: 0.5,
-      gradientToColors: ['#8b9dfc', '#9a73b5'],
-      inverseColors: true,
-      opacityFrom: 0.85,
-      opacityTo: 0.55,
-      stops: [0, 100],
-    },
-  },
-  plotOptions: {
-    bar: {
-      horizontal: false,
-      columnWidth: '55%',
-      borderRadius: 4,
-    },
-  },
-  dataLabels: {
-    enabled: false,
-  },
-  stroke: {
-    show: true,
-    width: 2,
-    colors: ['transparent'],
   },
   grid: {
     borderColor: '#f1f1f1',
@@ -532,54 +402,201 @@ const performanceChartOptions = ref({
         colors: '#666',
       },
       formatter: function (value: number) {
-        return '$' + value + 'k'
+        return '$' + (value / 1000).toFixed(1) + 'k'
+      },
+    },
+  },
+  tooltip: {
+    theme: 'light',
+  },
+})
+
+// Medicine Categories Chart
+const categoryChartSeries = ref([35, 28, 18, 12, 7])
+
+const categoryChartOptions = ref({
+  chart: {
+    type: 'donut',
+  },
+  colors: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'],
+  labels: ['Pain Relief', 'Antibiotics', 'Cardiovascular', 'Diabetes', 'Respiratory'],
+  legend: {
+    position: 'bottom',
+  },
+  plotOptions: {
+    pie: {
+      donut: {
+        size: '65%',
+      },
+    },
+  },
+  dataLabels: {
+    enabled: false,
+  },
+})
+
+// Stock Levels Chart
+const stockChartSeries = ref([
+  {
+    name: 'Current Stock',
+    data: [244, 185, 156, 98, 67, 34, 12, 8, 3],
+  },
+])
+
+const stockChartOptions = ref({
+  chart: {
+    type: 'bar',
+    toolbar: {
+      show: false,
+    },
+  },
+  colors: ['#f59e0b'],
+  plotOptions: {
+    bar: {
+      horizontal: true,
+      columnWidth: '55%',
+      borderRadius: 4,
+    },
+  },
+  dataLabels: {
+    enabled: false,
+  },
+  grid: {
+    borderColor: '#f1f1f1',
+  },
+  xaxis: {
+    categories: [
+      'Paracetamol',
+      'Amoxicillin',
+      'Lisinopril',
+      'Metformin',
+      'Omeprazole',
+      'Salbutamol',
+      'Warfarin',
+      'Insulin',
+      'Morphine',
+    ],
+    labels: {
+      style: {
+        colors: '#666',
+      },
+    },
+  },
+  yaxis: {
+    labels: {
+      style: {
+        colors: '#666',
+      },
+    },
+  },
+})
+
+// Revenue vs Profit Chart
+const revenueChartSeries = ref([
+  {
+    name: 'Revenue',
+    data: [65000, 72000, 68000, 75000, 82000, 79000, 88000, 94000, 91000, 97000, 103000, 109000],
+  },
+  {
+    name: 'Profit',
+    data: [18000, 21000, 19000, 23000, 26000, 24000, 28000, 31000, 29000, 32000, 35000, 38000],
+  },
+])
+
+const revenueChartOptions = ref({
+  chart: {
+    type: 'line',
+    toolbar: {
+      show: false,
+    },
+  },
+  colors: ['#3b82f6', '#10b981'],
+  stroke: {
+    width: 4,
+    curve: 'smooth',
+  },
+  markers: {
+    size: 6,
+    colors: ['#fff'],
+    strokeColors: ['#3b82f6', '#10b981'],
+    strokeWidth: 3,
+    hover: {
+      size: 8,
+    },
+  },
+  grid: {
+    borderColor: '#f1f1f1',
+  },
+  xaxis: {
+    categories: [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ],
+    labels: {
+      style: {
+        colors: '#666',
+      },
+    },
+  },
+  yaxis: {
+    labels: {
+      style: {
+        colors: '#666',
+      },
+      formatter: function (value: number) {
+        return '$' + (value / 1000).toFixed(0) + 'k'
       },
     },
   },
   tooltip: {
     y: {
       formatter: function (val: number) {
-        return '$' + val + 'k'
+        return '$' + val.toLocaleString()
       },
     },
   },
 })
 
-const statsOverviews = ref<StatsOverview>({
-  wonDealsValue: 0,
-  wonDealsCount: 0,
-  activeCustomersCount: 0,
-  conversionRate: 0,
-  comparison: {
-    wonDealsValue: 0,
-    wonDealsCount: 0,
-    activeCustomersCount: 0,
-    conversionRate: 0,
-  },
-})
-
-onMounted(() => {
-  // loadStatsOverview()
-  // loadCustomerGrowthReport()
-  // Any initialization logic can go here
-})
-
-onBeforeMount(() => {
-  loadStatsOverview()
-  loadCustomerGrowthReport()
-  // Any initialization logic can go here
-})
-
-const loadStatsOverview = async () => {
-  try {
-    const response = await dashboardService.getStatsOverview()
-    statsOverviews.value = response.data
-  } catch (error) {
-    ElMessage.error('Failed to load overview statistics')
-  }
+// Navigation methods
+const navigateToSales = () => {
+  router.push('/sales')
 }
 
-const loadCustomerGrowthReport = async () => {}
+const navigateToMedicines = () => {
+  router.push('/medicines')
+}
+
+const navigateToReceipts = () => {
+  router.push('/receipt-notes')
+}
+
+const navigateToDelivery = () => {
+  router.push('/delivery-notes')
+}
+
+// Utility methods
+const formatCurrency = (value: number) => {
+  return new Intl.NumberFormat('en-US').format(value)
+}
+
+const formatDate = (dateString: string) => {
+  return new Date(dateString).toLocaleDateString()
+}
+
+// Lifecycle hooks
+onMounted(() => {
+  // Load dashboard data
+})
 </script>
 
 <style scoped>
@@ -628,17 +645,16 @@ const loadCustomerGrowthReport = async () => {}
 
 /* Modern Card Styles */
 .modern-card {
-  background: rgba(255, 255, 255, 0.95);
+  background: white;
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 20px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
   transition: all 0.3s ease;
 }
 
 .modern-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
 }
 
 /* Metrics Section */
@@ -688,6 +704,15 @@ const loadCustomerGrowthReport = async () => {}
 
 .metric-icon-wrapper.conversion {
   background: linear-gradient(135deg, #45b7d1 0%, #96c93d 100%);
+}
+
+/* Pharmacy-specific metric icons */
+.metric-icon-wrapper.medicines {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+}
+
+.metric-icon-wrapper.sales {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
 }
 
 .metric-trend {
@@ -910,30 +935,171 @@ const loadCustomerGrowthReport = async () => {}
   color: #667eea;
 }
 
-/* Responsive Design */
+/* Alerts Section */
+.alerts-section {
+  margin-bottom: 40px;
+}
+
+.alerts-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 24px;
+}
+
+.alert-card {
+  padding: 24px;
+}
+
+.alert-card.critical {
+  border-left: 4px solid #ef4444;
+}
+
+.alert-card.warning {
+  border-left: 4px solid #f59e0b;
+}
+
+.alert-card.info {
+  border-left: 4px solid #3b82f6;
+}
+
+.alert-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.alert-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.alert-card.critical .alert-icon {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+}
+
+.alert-card.warning .alert-icon {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+.alert-card.info .alert-icon {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+}
+
+.alert-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 4px 0;
+}
+
+.alert-subtitle {
+  font-size: 14px;
+  color: #64748b;
+  margin: 0;
+}
+
+.alert-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.alert-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 8px;
+}
+
+.alert-icon-small {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.alert-content {
+  flex: 1;
+}
+
+.alert-message {
+  font-weight: 500;
+  color: #1e293b;
+  margin-bottom: 4px;
+}
+
+.alert-time {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.alert-quantity {
+  font-weight: 600;
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.1);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.quick-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: white;
+  color: #64748b;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.action-btn:hover {
+  border-color: #3b82f6;
+  color: #3b82f6;
+  background: rgba(59, 130, 246, 0.05);
+}
+
+.action-btn .material-symbols-outlined {
+  font-size: 18px;
+}
+
 @media (max-width: 1024px) {
   .charts-row {
     grid-template-columns: 1fr;
   }
 
-  .dashboard-header {
-    flex-direction: column;
-    gap: 20px;
-    align-items: flex-start;
+  .alerts-row {
+    grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 768px) {
-  .dashboard-container {
-    padding: 20px;
-  }
-
   .metrics-grid {
     grid-template-columns: 1fr;
   }
 
-  .header-content .dashboard-title {
-    font-size: 32px;
+  .quick-actions {
+    grid-template-columns: 1fr;
   }
 }
 </style>
