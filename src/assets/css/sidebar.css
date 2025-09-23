@@ -1,0 +1,32 @@
+/*Sidebar styles*/
+.sidebar {
+  position: fixed;
+  top: var(--topbar-height);
+  left: 0;
+  z-index: 40;
+  height: calc(100vh - var(--topbar-height));
+  transition: transform 0.3s ease-in-out;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.sidebar-open {
+  transform: translateX(0);
+}
+
+.sidebar-closed {
+  transform: translateX(-100%);
+}
+
+.el-menu > .el-menu-item {
+  height: 40px;
+  line-height: 40px;
+  border-top-right-radius: 20px;
+  border-bottom-right-radius: 20px;
+  transition: all 0.3s ease;
+}
+
+.el-menu > .el-menu-item:hover {
+  margin-right: 25px;
+  transition: all 0.3s ease;
+}

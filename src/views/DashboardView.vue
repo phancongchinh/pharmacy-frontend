@@ -1,12 +1,10 @@
 <template>
-  <div class="dashboard-container">
+  <div class="page-container">
     <!-- Header Section with improved typography -->
-    <div class="dashboard-header">
-      <div class="header-content">
-        <h1 class="dashboard-title">Dashboard</h1>
-        <p class="dashboard-subtitle">
-          Welcome back! Here's what's happening with your business today.
-        </p>
+    <div class="page-header">
+      <div class="page-header-content">
+        <h1 class="page-title">Dashboard</h1>
+        <p class="page-subtitle">Welcome back! Here's what's happening with your business today.</p>
       </div>
       <div class="header-actions">
         <el-button type="primary" class="modern-button">
@@ -585,12 +583,6 @@ const loadCustomerGrowthReport = async () => {}
 </script>
 
 <style scoped>
-.dashboard-container {
-  padding: 32px;
-  min-height: 100vh;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
 /* Header Styles */
 .dashboard-header {
   display: flex;

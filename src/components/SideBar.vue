@@ -88,12 +88,12 @@ const router = useRouter()
 const navigation = shallowRef([
   { name: 'Dashboard', index: '/', icon: House },
   { name: 'Medicine', index: '/medicines', icon: User },
-  { name: 'Orders', index: '/deals', icon: Notebook },
+  { name: 'Sales', index: '/sales', icon: ShoppingCart },
   { name: 'Receipt Note', index: '/appointments', icon: Calendar },
   { name: 'Delivery Note', index: '/emails', icon: Message },
   { name: 'Suppliers', index: '/suppliers', icon: Phone },
-  { name: 'Analytics', index: '/analytics', icon: PieChart },
-  { name: 'Settings', index: '/settings', icon: Setting },
+  // { name: 'Analytics', index: '/analytics', icon: PieChart },
+  // { name: 'Settings', index: '/settings', icon: Setting },
 ])
 
 // Computed property for active route
