@@ -87,13 +87,13 @@
               <div class="items-info">
                 <span class="item-count">{{ row.totalItems }} items</span>
                 <div class="medicines-preview">
-                  {{
-                    row.medicines
-                      .slice(0, 2)
-                      .map((m) => m.name)
-                      .join(', ')
-                  }}
-                  <span v-if="row.medicines.length > 2">+{{ row.medicines.length - 2 }} more</span>
+                  <!--                  {{-->
+                  <!--                    row.medicines-->
+                  <!--                      .slice(0, 2)-->
+                  <!--                      .map((m) => m.name)-->
+                  <!--                      .join(', ')-->
+                  <!--                  }}-->
+                  <!--                  <span v-if="row.medicines.length > 2">+{{ row.medicines.length - 2 }} more</span>-->
                 </div>
               </div>
             </template>
@@ -119,9 +119,9 @@
 
           <el-table-column prop="status" label="Status" min-width="110">
             <template #default="{ row }">
-              <el-tag :type="getStatusType(row.status)" size="small">
-                {{ getStatusLabel(row.status) }}
-              </el-tag>
+              <!--              <el-tag :type="getStatusType(row.status)" size="small">-->
+              <!--                {{ getStatusLabel(row.status) }}-->
+              <!--              </el-tag>-->
             </template>
           </el-table-column>
 
@@ -283,9 +283,9 @@
               </div>
               <div class="detail-item">
                 <label>Status:</label>
-                <el-tag :type="getStatusType(currentReceiptNote.status)" size="small">
-                  {{ getStatusLabel(currentReceiptNote.status) }}
-                </el-tag>
+                <!--                <el-tag :type="getStatusType(currentReceiptNote.status)" size="small">-->
+                <!--                  {{ getStatusLabel(currentReceiptNote.status) }}-->
+                <!--                </el-tag>-->
               </div>
               <div class="detail-item">
                 <label>Verification:</label>

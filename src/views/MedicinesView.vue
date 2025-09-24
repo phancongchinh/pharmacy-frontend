@@ -54,11 +54,32 @@
             <template #default="{ row }">
               <div class="batch-details">
                 <h4 class="batch-title">Medicine Batches</h4>
-                <el-table :data="row.batches" class="batch-table">
+
+                <!-- Loading state for batches -->
+                <div v-if="batchLoading[row.id]" class="batch-loading">
+                  <el-skeleton :rows="3" animated>
+                    <template #template>
+                      <div class="skeleton-batch-row">
+                        <el-skeleton-item variant="text" style="width: 20%" />
+                        <el-skeleton-item variant="text" style="width: 15%" />
+                        <el-skeleton-item variant="text" style="width: 10%" />
+                        <el-skeleton-item variant="text" style="width: 15%" />
+                        <el-skeleton-item variant="rect" style="width: 60px; height: 24px;" />
+                      </div>
+                    </template>
+                  </el-skeleton>
+                </div>
+
+                <!-- Batches table -->
+                <el-table
+                  :data="row.medicineBatches"
+                  class="batch-table"
+                  v-else-if="row.medicineBatches && row.medicineBatches.length > 0"
+                >
                   <el-table-column prop="batchNumber" label="Batch Number" min-width="120" />
                   <el-table-column prop="expiryDate" label="Expiry Date" min-width="120">
                     <template #default="{ row: batch }">
-                      <span :class="{ 'expiry-warning': isExpiringsoon(batch.expiryDate) }">
+                      <span :class="{ 'expiry-warning': isExpiringSoon(batch.expiryDate) }">
                         {{ formatDate(batch.expiryDate) }}
                       </span>
                     </template>
@@ -81,6 +102,16 @@
                     </template>
                   </el-table-column>
                 </el-table>
+
+                <!-- Empty state -->
+                <div v-else class="no-batches">
+                  <el-empty description="No batches available for this medicine" :image-size="80">
+                    <el-button type="primary" size="small" @click="handleAddBatch(row)">
+                      <span class="material-symbols-outlined">add_box</span>
+                      Add First Batch
+                    </el-button>
+                  </el-empty>
+                </div>
               </div>
             </template>
           </el-table-column>
@@ -375,6 +406,7 @@ import { medicinesService, type Medicine, type MedicineFilters, MedicineDosageFo
 // Reactive data
 const loading = ref(false)
 const saving = ref(false)
+const batchLoading = ref<Record<number, boolean>>({}) // Track batch loading state per medicine
 const medicines = ref<Medicine[]>([])
 const selectedMedicines = ref<Medicine[]>([])
 const drawerVisible = ref(false)
@@ -493,10 +525,49 @@ const handleSelectionChange = (selection: Medicine[]) => {
   selectedMedicines.value = selection
 }
 
-const handleExpandChange = (row: Medicine, expanded: boolean) => {
+const handleExpandChange = async (row: Medicine, expanded: boolean) => {
   if (expanded && (!row.medicineBatches || row.medicineBatches.length === 0)) {
-    // Load medicine batches if not already loaded
-    console.log('Loading batches for medicine:', row.id)
+    // Start loading batches for this medicine
+    batchLoading.value[row.id] = true
+
+    try {
+      const response = await medicinesService.getMedicineBatches(row.id)
+      if (response.success && response.data) {
+        // Find the medicine in the array and update its batches
+        const medicineIndex = medicines.value.findIndex(m => m.id === row.id)
+        if (medicineIndex !== -1) {
+          medicines.value[medicineIndex].medicineBatches = response.data
+        }
+        console.log(`Loaded ${response.data.length} batches for medicine: ${row.name}`)
+      } else {
+        ElMessage.error(response.message || 'Failed to load medicine batches')
+        console.error('Failed to load batches:', response.message)
+      }
+    } catch (error) {
+      console.error('Error loading medicine batches:', error)
+      // If the specific batches endpoint doesn't exist, fall back to getting full medicine details
+      try {
+        const medicineResponse = await medicinesService.getMedicineById(row.id)
+        if (medicineResponse.success && medicineResponse.data?.medicineBatches) {
+          const medicineIndex = medicines.value.findIndex(m => m.id === row.id)
+          if (medicineIndex !== -1) {
+            medicines.value[medicineIndex].medicineBatches = medicineResponse.data.medicineBatches
+          }
+          console.log(`Loaded batches via medicine details for: ${row.name}`)
+        } else {
+          // If no batches available, set empty array to prevent repeated API calls
+          const medicineIndex = medicines.value.findIndex(m => m.id === row.id)
+          if (medicineIndex !== -1) {
+            medicines.value[medicineIndex].medicineBatches = []
+          }
+        }
+      } catch (fallbackError) {
+        console.error('Error loading medicine details:', fallbackError)
+        ElMessage.error('Failed to load medicine batches')
+      }
+    } finally {
+      batchLoading.value[row.id] = false
+    }
   }
 }
 
@@ -673,7 +744,7 @@ const getRowClassName = ({ row }: { row: Medicine }) => {
   return ''
 }
 
-const isExpiringsoon = (expiryDate: string) => {
+const isExpiringSoon = (expiryDate: string) => {
   const expiry = new Date(expiryDate)
   const today = new Date()
   const diffTime = expiry.getTime() - today.getTime()
@@ -780,6 +851,25 @@ onMounted(() => {
 .batch-table {
   background: white;
   border-radius: 6px;
+}
+
+/* Loading states for batches */
+.batch-loading {
+  padding: 16px;
+  background: white;
+  border-radius: 6px;
+}
+
+.skeleton-batch-row {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  padding: 12px 0;
+}
+
+.no-batches {
+  padding: 20px;
+  text-align: center;
 }
 
 .expiry-warning {

@@ -88,6 +88,17 @@ class MedicinesService {
     }
   }
 
+  async getMedicineBatches(medicineId: number): Promise<ApiResponse<MedicineBatch[]>> {
+    // Assuming there's an endpoint to get batches for a specific medicine
+    const response = await apiClient.get<MedicineBatch[]>(`/api/medicines/${medicineId}/batches`)
+
+    return {
+      data: response.data || response,
+      success: response.success ?? true,
+      message: response.message || 'Medicine batches retrieved successfully',
+    }
+  }
+
   async createMedicine(
     medicine: Omit<Medicine, 'id' | 'createdBy' | 'createdDate' | 'lastModifiedBy' | 'lastModifiedDate' | 'isDeleted'>,
   ): Promise<ApiResponse<Medicine>> {
