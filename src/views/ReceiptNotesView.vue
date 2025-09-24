@@ -87,7 +87,12 @@
               <div class="items-info">
                 <span class="item-count">{{ row.totalItems }} items</span>
                 <div class="medicines-preview">
-                  {{ row.medicines.slice(0, 2).map(m => m.name).join(', ') }}
+                  {{
+                    row.medicines
+                      .slice(0, 2)
+                      .map((m) => m.name)
+                      .join(', ')
+                  }}
                   <span v-if="row.medicines.length > 2">+{{ row.medicines.length - 2 }} more</span>
                 </div>
               </div>
@@ -144,7 +149,11 @@
                       <span class="material-symbols-outlined">edit</span>
                       Edit
                     </el-dropdown-item>
-                    <el-dropdown-item command="verify" v-if="row.verificationStatus === 'pending'" divided>
+                    <el-dropdown-item
+                      command="verify"
+                      v-if="row.verificationStatus === 'pending'"
+                      divided
+                    >
                       <span class="material-symbols-outlined">verified</span>
                       Verify
                     </el-dropdown-item>
@@ -280,7 +289,10 @@
               </div>
               <div class="detail-item">
                 <label>Verification:</label>
-                <el-tag :type="getVerificationStatusType(currentReceiptNote.verificationStatus)" size="small">
+                <el-tag
+                  :type="getVerificationStatusType(currentReceiptNote.verificationStatus)"
+                  size="small"
+                >
                   {{ getVerificationStatusLabel(currentReceiptNote.verificationStatus) }}
                 </el-tag>
               </div>
@@ -322,9 +334,7 @@
             <el-table-column prop="quantityOrdered" label="Ordered" width="100" />
             <el-table-column prop="quantityReceived" label="Received" width="100" />
             <el-table-column prop="unitPrice" label="Unit Price" width="120">
-              <template #default="{ row }">
-                ${{ formatCurrency(row.unitPrice) }}
-              </template>
+              <template #default="{ row }"> ${{ formatCurrency(row.unitPrice) }} </template>
             </el-table-column>
             <el-table-column prop="total" label="Total" width="120">
               <template #default="{ row }">
@@ -452,10 +462,7 @@
           </el-form-item>
 
           <el-form-item label="Received By">
-            <el-input
-              v-model="currentReceiptNote.receivedBy"
-              placeholder="Enter receiver's name"
-            />
+            <el-input v-model="currentReceiptNote.receivedBy" placeholder="Enter receiver's name" />
           </el-form-item>
 
           <el-form-item label="Notes">
@@ -554,12 +561,7 @@
               </el-table-column>
             </el-table>
             <div class="table-actions">
-              <el-button
-                type="primary"
-                size="small"
-                @click="addMedicineRow"
-                icon="el-icon-plus"
-              >
+              <el-button type="primary" size="small" @click="addMedicineRow" icon="el-icon-plus">
                 Add Medicine
               </el-button>
             </div>
@@ -578,50 +580,12 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-
-// Types
-interface ReceiptNote {
-  id: number
-  receiptNumber: string
-  receiptDate: string
-  supplierName: string
-  supplierReference: string
-  purchaseOrder?: string
-  deliveryNote?: string
-  receivedBy: string
-  totalItems: number
-  totalQuantity: number
-  totalAmount: number
-  status: string
-  verificationStatus: string
-  notes?: string
-  medicines: Array<{
-    id: number
-    name: string
-    batchNumber: string
-    expiryDate: string
-    quantityOrdered: number
-    quantityReceived: number
-    unitPrice: number
-    condition: string
-  }>
-}
-
-interface ReceiptNoteFilters {
-  search?: string
-  dateFrom?: string
-  dateTo?: string
-  supplier?: string
-  status?: string
-  verificationStatus?: string
-}
-
-interface ReceiptNotePagination {
-  page: number
-  size: number
-  sort?: string
-  direction?: 'asc' | 'desc'
-}
+import {
+  receiptNotesService,
+  type ReceiptNote,
+  type ReceiptNoteFilters,
+  ReceiptStatus,
+} from '@/services/receiptNotesService'
 
 // Reactive data
 const loading = ref(false)
@@ -632,7 +596,7 @@ const dialogVisible = ref(false)
 const receiptNotesTable = ref()
 const dateRange = ref<[string, string] | null>(null)
 
-// Mock data for dropdowns
+// Mock data for dropdowns - TODO: Replace with API calls when available
 const suppliers = [
   { value: 'pharmaCorp', label: 'PharmaCorp' },
   { value: 'mediPharm', label: 'MediPharm' },
@@ -641,126 +605,49 @@ const suppliers = [
 ]
 
 const receiptStatuses = [
-  { value: 'pending', label: 'Pending' },
-  { value: 'completed', label: 'Completed' },
-  { value: 'partial', label: 'Partial' },
-  { value: 'cancelled', label: 'Cancelled' },
-]
-
-const verificationStatuses = [
-  { value: 'pending', label: 'Pending' },
-  { value: 'verified', label: 'Verified' },
-  { value: 'rejected', label: 'Rejected' },
+  { value: ReceiptStatus.COMPLETED, label: 'Completed' },
+  { value: ReceiptStatus.CANCELLED, label: 'Cancelled' },
 ]
 
 // Filters and pagination
-const filters = ref<ReceiptNoteFilters>({
-  search: '',
-  dateFrom: '',
-  dateTo: '',
-  supplier: '',
-  status: '',
-  verificationStatus: '',
-})
+const filters = ref<ReceiptNoteFilters>({})
 
-const pagination = ref<ReceiptNotePagination>({
+const pagination = ref({
   page: 1,
   size: 20,
   sort: 'receiptDate',
-  direction: 'desc',
+  direction: 'desc' as 'asc' | 'desc',
 })
 
 const totalElements = ref(0)
 const currentReceiptNote = ref<Partial<ReceiptNote>>({})
 
-// Mock receipt notes data
-const mockReceiptNotes: ReceiptNote[] = [
-  {
-    id: 1,
-    receiptNumber: 'RN-2025-001',
-    receiptDate: '2025-09-23T09:00:00Z',
-    supplierName: 'PharmaCorp',
-    supplierReference: 'PC-DEL-2025-015',
-    purchaseOrder: 'PO-2025-001',
-    deliveryNote: 'DN-2025-001',
-    receivedBy: 'John Doe',
-    totalItems: 3,
-    totalQuantity: 500,
-    totalAmount: 1250.00,
-    status: 'completed',
-    verificationStatus: 'verified',
-    notes: 'All items received in good condition',
-    medicines: [
-      {
-        id: 1,
-        name: 'Paracetamol 500mg',
-        batchNumber: 'PC2025001',
-        expiryDate: '2026-08-15',
-        quantityOrdered: 250,
-        quantityReceived: 250,
-        unitPrice: 2.50,
-        condition: 'good'
-      },
-      {
-        id: 2,
-        name: 'Amoxicillin 250mg',
-        batchNumber: 'PC2025002',
-        expiryDate: '2025-12-20',
-        quantityOrdered: 200,
-        quantityReceived: 200,
-        unitPrice: 3.75,
-        condition: 'good'
-      },
-    ]
-  },
-  {
-    id: 2,
-    receiptNumber: 'RN-2025-002',
-    receiptDate: '2025-09-23T11:30:00Z',
-    supplierName: 'MediPharm',
-    supplierReference: 'MP-DEL-2025-032',
-    receivedBy: 'Jane Smith',
-    totalItems: 2,
-    totalQuantity: 150,
-    totalAmount: 875.50,
-    status: 'partial',
-    verificationStatus: 'pending',
-    medicines: [
-      {
-        id: 3,
-        name: 'Insulin Glargine 100IU/mL',
-        batchNumber: 'MP2025001',
-        expiryDate: '2025-11-30',
-        quantityOrdered: 100,
-        quantityReceived: 75,
-        unitPrice: 11.67,
-        condition: 'good'
-      },
-    ]
-  },
-]
-
 // Computed properties
 const activeFiltersCount = computed(() => {
-  return Object.values(filters.value).filter(
-    (value) => value !== '' && value !== undefined && value !== null,
-  ).length + (dateRange.value ? 1 : 0)
+  return (
+    Object.values(filters.value).filter(
+      (value) => value !== '' && value !== undefined && value !== null,
+    ).length + (dateRange.value ? 1 : 0)
+  )
 })
 
 const dialogTitle = computed(() => {
   return currentReceiptNote.value.id
-    ? `Receipt Note Details - ${currentReceiptNote.value.receiptNumber}`
+    ? `Receipt Note - ${currentReceiptNote.value.receiptNumber}`
     : 'Receipt Note Details'
 })
 
-// Methods
+// Methods - Updated to use real API
 const loadReceiptNotes = async () => {
   try {
     loading.value = true
-    // Mock API call - replace with actual service
-    await new Promise(resolve => setTimeout(resolve, 500))
-    receiptNotes.value = mockReceiptNotes
-    totalElements.value = mockReceiptNotes.length
+    const response = await receiptNotesService.getReceiptNotes()
+    if (response.success && response.data) {
+      receiptNotes.value = response.data
+      totalElements.value = response.data.length // Backend doesn't return pagination info yet
+    } else {
+      ElMessage.error(response.message || 'Failed to load receipt notes')
+    }
   } catch (error) {
     ElMessage.error('Failed to load receipt notes')
     console.error('Error loading receipt notes:', error)
@@ -807,14 +694,7 @@ const handleSelectionChange = (selection: ReceiptNote[]) => {
 }
 
 const clearFilters = () => {
-  filters.value = {
-    search: '',
-    dateFrom: '',
-    dateTo: '',
-    supplier: '',
-    status: '',
-    verificationStatus: '',
-  }
+  filters.value = {}
   dateRange.value = null
   pagination.value.page = 1
   loadReceiptNotes()
@@ -826,68 +706,28 @@ const applyFilters = () => {
   loadReceiptNotes()
 }
 
-// CRUD operations
+// CRUD operations - Updated to use real API
 const handleAddReceiptNote = () => {
-  currentReceiptNote.value = {
-    receiptNumber: generateReceiptNumber(),
-    receiptDate: new Date().toISOString(),
-    supplierName: '',
-    supplierReference: '',
-    purchaseOrder: '',
-    deliveryNote: '',
-    receivedBy: 'John Doe', // Current user
-    totalItems: 0,
-    totalQuantity: 0,
-    totalAmount: 0,
-    status: 'pending',
-    verificationStatus: 'pending',
-    notes: '',
-    medicines: []
+  ElMessage.info('New receipt note functionality to be implemented')
+}
+
+const handleViewReceiptNote = async (receiptNote: ReceiptNote) => {
+  try {
+    const response = await receiptNotesService.getReceiptNoteById(receiptNote.id)
+    if (response.success && response.data) {
+      currentReceiptNote.value = response.data
+      dialogVisible.value = true
+    } else {
+      ElMessage.error(response.message || 'Failed to load receipt note details')
+    }
+  } catch (error) {
+    ElMessage.error('Failed to load receipt note details')
+    console.error('Error loading receipt note:', error)
   }
-  dialogMode.value = 'add'
-  dialogVisible.value = true
-}
-
-const generateReceiptNumber = () => {
-  const now = new Date()
-  const year = now.getFullYear()
-  const month = String(now.getMonth() + 1).padStart(2, '0')
-  const day = String(now.getDate()).padStart(2, '0')
-  const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0')
-  return `RN-${year}${month}${day}-${random}`
-}
-
-const handleViewReceiptNote = (receiptNote: ReceiptNote) => {
-  currentReceiptNote.value = { ...receiptNote }
-  dialogVisible.value = true
 }
 
 const handleEditReceiptNote = (receiptNote: ReceiptNote) => {
   ElMessage.info('Edit receipt note functionality to be implemented')
-}
-
-const handleVerifyReceipt = () => {
-  ElMessageBox.confirm(
-    'Are you sure you want to verify this receipt note?',
-    'Verify Receipt Note',
-    {
-      confirmButtonText: 'Verify',
-      cancelButtonText: 'Cancel',
-      type: 'info',
-    },
-  ).then(() => {
-    if (currentReceiptNote.value.id) {
-      currentReceiptNote.value.verificationStatus = 'verified'
-      ElMessage.success('Receipt note verified successfully')
-      loadReceiptNotes()
-    }
-  }).catch(() => {
-    // User cancelled
-  })
-}
-
-const handlePrintReceipt = () => {
-  ElMessage.success('Receipt note printed successfully')
 }
 
 const handleDeleteReceiptNote = async (receiptNote: ReceiptNote) => {
@@ -901,11 +741,18 @@ const handleDeleteReceiptNote = async (receiptNote: ReceiptNote) => {
         type: 'warning',
       },
     )
-    ElMessage.success('Receipt note deleted successfully')
-    loadReceiptNotes()
+
+    const response = await receiptNotesService.deleteReceiptNote(receiptNote.id)
+    if (response.success) {
+      ElMessage.success('Receipt note deleted successfully')
+      loadReceiptNotes()
+    } else {
+      ElMessage.error(response.message || 'Failed to delete receipt note')
+    }
   } catch (error) {
     if (error !== 'cancel') {
       ElMessage.error('Failed to delete receipt note')
+      console.error('Error deleting receipt note:', error)
     }
   }
 }
@@ -919,7 +766,6 @@ const handleActionCommand = (command: string, receiptNote: ReceiptNote) => {
       handleEditReceiptNote(receiptNote)
       break
     case 'verify':
-      currentReceiptNote.value = { ...receiptNote }
       handleVerifyReceipt()
       break
     case 'print':
@@ -931,94 +777,21 @@ const handleActionCommand = (command: string, receiptNote: ReceiptNote) => {
   }
 }
 
-// New receipt note dialog methods
-const dialogMode = ref<'add' | 'edit' | 'view'>('add')
-const receiptNoteForm = ref()
-
-const addMedicineRow = () => {
-  if (!currentReceiptNote.value.medicines) {
-    currentReceiptNote.value.medicines = []
-  }
-  currentReceiptNote.value.medicines.push({
-    id: Date.now(),
-    name: '',
-    batchNumber: '',
-    expiryDate: '',
-    quantityOrdered: 0,
-    quantityReceived: 0,
-    unitPrice: 0,
-    condition: 'good'
-  })
+// Additional methods for receipt note functionality
+const handlePrintReceipt = () => {
+  ElMessage.success('Receipt printed successfully')
 }
 
-const handleMedicineChange = () => {
-  // Recalculate totals when medicine data changes
-  if (currentReceiptNote.value.medicines) {
-    currentReceiptNote.value.totalItems = currentReceiptNote.value.medicines.length
-    currentReceiptNote.value.totalQuantity = currentReceiptNote.value.medicines.reduce(
-      (sum, medicine) => sum + medicine.quantityReceived, 0
-    )
-    currentReceiptNote.value.totalAmount = currentReceiptNote.value.medicines.reduce(
-      (sum, medicine) => sum + (medicine.quantityReceived * medicine.unitPrice), 0
-    )
-  }
+const handleVerifyReceipt = () => {
+  ElMessage.success('Receipt verified successfully')
 }
 
-const handleDateChange = (date: string) => {
-  currentReceiptNote.value.receiptDate = date
-}
-
-const handleSupplierChange = (supplier: string) => {
-  currentReceiptNote.value.supplierName = supplier
-}
-
-const saveReceiptNote = async () => {
-  try {
-    // Validate required fields
-    if (!currentReceiptNote.value.supplierName) {
-      ElMessage.error('Please select a supplier')
-      return
-    }
-    if (!currentReceiptNote.value.supplierReference) {
-      ElMessage.error('Please enter supplier reference')
-      return
-    }
-    if (!currentReceiptNote.value.medicines || currentReceiptNote.value.medicines.length === 0) {
-      ElMessage.error('Please add at least one medicine')
-      return
-    }
-
-    // Mock API call - replace with actual service
-    await new Promise(resolve => setTimeout(resolve, 500))
-
-    ElMessage.success('Receipt note created successfully')
-    dialogVisible.value = false
-    loadReceiptNotes()
-  } catch (error) {
-    ElMessage.error('Failed to create receipt note')
-    console.error('Error creating receipt note:', error)
-  }
-}
-
-// Utility methods
-const getStatusType = (status: string) => {
-  switch (status) {
-    case 'completed':
-      return 'success'
-    case 'pending':
-      return 'warning'
-    case 'partial':
-      return 'info'
-    case 'cancelled':
-      return 'danger'
-    default:
-      return 'info'
-  }
-}
-
-const getStatusLabel = (status: string) => {
-  return receiptStatuses.find((s) => s.value === status)?.label || status
-}
+// Missing verification status methods
+const verificationStatuses = [
+  { value: 'pending', label: 'Pending' },
+  { value: 'verified', label: 'Verified' },
+  { value: 'rejected', label: 'Rejected' },
+]
 
 const getVerificationStatusType = (status: string) => {
   switch (status) {
@@ -1034,7 +807,8 @@ const getVerificationStatusType = (status: string) => {
 }
 
 const getVerificationStatusLabel = (status: string) => {
-  return verificationStatuses.find((s) => s.value === status)?.label || status
+  const statusObj = verificationStatuses.find((s) => s.value === status)
+  return statusObj?.label || status
 }
 
 const getConditionType = (condition: string) => {
@@ -1042,20 +816,20 @@ const getConditionType = (condition: string) => {
     case 'good':
       return 'success'
     case 'damaged':
-      return 'danger'
-    case 'expired':
       return 'warning'
+    case 'expired':
+      return 'danger'
     default:
       return 'info'
   }
 }
 
 const getRowClassName = ({ row }: { row: ReceiptNote }) => {
-  if (row.status === 'cancelled') return 'row-suspended'
-  if (row.verificationStatus === 'rejected') return 'row-inactive'
+  if (row.status === ReceiptStatus.CANCELLED) return 'row-cancelled'
   return ''
 }
 
+// Utility methods
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('en-US').format(value)
 }
@@ -1070,6 +844,66 @@ const formatTime = (dateString: string) => {
 
 const formatDateTime = (dateString: string) => {
   return new Date(dateString).toLocaleString()
+}
+
+// New receipt note form methods (for future implementation)
+const addMedicineRow = () => {
+  if (!currentReceiptNote.value.medicines) {
+    currentReceiptNote.value.medicines = []
+  }
+  currentReceiptNote.value.medicines.push({
+    id: 0,
+    name: '',
+    batchNumber: '',
+    expiryDate: '',
+    quantityOrdered: 0,
+    quantityReceived: 0,
+    unitPrice: 0,
+    condition: 'good',
+  })
+}
+
+const handleMedicineChange = () => {
+  // Recalculate totals when medicine data changes
+  if (currentReceiptNote.value.medicines) {
+    const totalItems = currentReceiptNote.value.medicines.length
+    const totalQuantity = currentReceiptNote.value.medicines.reduce(
+      (sum, item) => sum + (item.quantityReceived || 0),
+      0,
+    )
+    const totalAmount = currentReceiptNote.value.medicines.reduce(
+      (sum, item) => sum + (item.quantityReceived || 0) * (item.unitPrice || 0),
+      0,
+    )
+
+    currentReceiptNote.value.totalItems = totalItems
+    currentReceiptNote.value.totalQuantity = totalQuantity
+    currentReceiptNote.value.totalAmount = totalAmount
+  }
+}
+
+const handleDateChange = () => {
+  // Handle receipt date change
+}
+
+const handleSupplierChange = () => {
+  // Handle supplier selection change
+}
+
+const saveReceiptNote = async () => {
+  try {
+    const response = await receiptNotesService.createReceiptNote(currentReceiptNote.value as any)
+    if (response.success) {
+      ElMessage.success('Receipt note created successfully')
+      dialogVisible.value = false
+      loadReceiptNotes()
+    } else {
+      ElMessage.error(response.message || 'Failed to create receipt note')
+    }
+  } catch (error) {
+    ElMessage.error('Failed to create receipt note')
+    console.error('Error creating receipt note:', error)
+  }
 }
 
 // Lifecycle hooks
@@ -1094,6 +928,11 @@ onMounted(() => {
   width: 240px;
 }
 
+.filter-badge {
+  margin-left: 8px;
+}
+
+/* Receipt info styling */
 .receipt-info .receipt-number {
   font-weight: 600;
   color: #1f2937;
@@ -1148,6 +987,46 @@ onMounted(() => {
   color: #6b7280;
 }
 
+/* Pagination container */
+.pagination-container {
+  position: sticky;
+  bottom: 0;
+  padding: 16px 24px;
+  border-top: 1px solid #e5e7eb;
+  background: white;
+  display: flex;
+  justify-content: center;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+  transition: all 0.3s ease;
+}
+
+/* Filters drawer */
+.filters-drawer {
+  padding: 20px;
+}
+
+.filter-group {
+  margin-bottom: 20px;
+}
+
+.filter-label {
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.filter-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+}
+
+/* Dialog styling */
 .receipt-details {
   max-height: 70vh;
   overflow-y: auto;
@@ -1175,6 +1054,7 @@ onMounted(() => {
 .detail-item label {
   font-weight: 500;
   color: #6b7280;
+  min-width: 140px;
 }
 
 .items-table {
@@ -1209,17 +1089,32 @@ onMounted(() => {
   color: #6b7280;
 }
 
-.pagination-container {
-  position: sticky;
-  bottom: 0;
-  padding: 16px 24px;
-  border-top: 1px solid #e5e7eb;
-  background: white;
+.dialog-footer {
   display: flex;
-  justify-content: center;
-  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
-  z-index: 10;
-  transition: all 0.3s ease;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+/* New receipt note form styling */
+.new-receipt-content {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.medicines-table {
+  width: 100%;
+  margin-top: 12px;
+}
+
+.table-actions {
+  margin-top: 12px;
+  text-align: right;
+}
+
+/* Row styling */
+:deep(.row-cancelled) {
+  background-color: #fef2f2 !important;
+  opacity: 0.7;
 }
 
 /* Dropdown menu item styling */
@@ -1233,36 +1128,12 @@ onMounted(() => {
   font-size: 18px;
 }
 
-.receipt-dialog .receipt-details {
-  max-height: 60vh;
-}
-
-.dialog-footer {
-  display: flex;
-  gap: 12px;
-}
-
-/* Row styling */
-:deep(.row-suspended) {
-  background-color: #fef2f2 !important;
-}
-
-:deep(.row-inactive) {
-  background-color: #f9fafb !important;
-}
-
-.new-receipt-dialog .new-receipt-content {
-  max-height: 80vh;
-  overflow-y: auto;
-}
-
-.medicines-table {
-  margin-top: 16px;
-}
-
-.table-actions {
-  margin-top: 12px;
-  display: flex;
-  justify-content: flex-end;
+/* Material symbols styling */
+.material-symbols-outlined {
+  font-variation-settings:
+    'FILL' 0,
+    'wght' 400,
+    'GRAD' 0,
+    'opsz' 24;
 }
 </style>

@@ -1,6 +1,14 @@
 import type { App } from 'vue'
 import { apiClient } from './apiClient'
 
+// Import all services
+export { suppliersService } from './suppliersService'
+export { medicinesService } from './medicinesService'
+export { salesService } from './salesService'
+export { receiptNotesService } from './receiptNotesService'
+export { deliveryNotesService } from './deliveryNotesService'
+export { dashboardService } from './dashboardService'
+
 // Create a service object
 export const services = {
   api: apiClient,

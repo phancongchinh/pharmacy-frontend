@@ -87,7 +87,12 @@
               <div class="items-info">
                 <span class="item-count">{{ row.totalItems }} items</span>
                 <div class="medicines-preview">
-                  {{ row.medicines.slice(0, 2).map(m => m.name).join(', ') }}
+                  {{
+                    row.medicines
+                      .slice(0, 2)
+                      .map((m) => m.name)
+                      .join(', ')
+                  }}
                   <span v-if="row.medicines.length > 2">...</span>
                 </div>
               </div>
@@ -306,9 +311,7 @@
             <el-table-column prop="name" label="Medicine" min-width="200" />
             <el-table-column prop="quantity" label="Quantity" width="100" />
             <el-table-column prop="unitPrice" label="Unit Price" width="120">
-              <template #default="{ row }">
-                ${{ formatCurrency(row.unitPrice) }}
-              </template>
+              <template #default="{ row }"> ${{ formatCurrency(row.unitPrice) }} </template>
             </el-table-column>
             <el-table-column prop="total" label="Total" width="120">
               <template #default="{ row }">
@@ -357,43 +360,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { salesService, type Sale, type SaleFilters, PaymentMethod, SaleStatus } from '@/services/salesService'
 
-// Types
-interface Sale {
-  id: number
-  invoiceNumber: string
-  saleDate: string
-  customerName: string
-  customerPhone: string
-  customerEmail?: string
-  salesPerson: string
-  totalItems: number
-  subtotal: number
-  discount: number
-  tax: number
-  totalAmount: number
-  paymentMethod: string
-  paymentStatus: string
-  status: string
-  medicines: Array<{
-    id: number
-    name: string
-    quantity: number
-    unitPrice: number
-  }>
-}
-
-interface SaleFilters {
-  search?: string
-  dateFrom?: string
-  dateTo?: string
-  paymentMethod?: string
-  status?: string
-  salesPerson?: string
-  amountMin?: number
-  amountMax?: number
-}
-
+// Types - using types from the service
 interface SalePagination {
   page: number
   size: number
@@ -410,19 +379,18 @@ const dialogVisible = ref(false)
 const salesTable = ref()
 const dateRange = ref<[string, string] | null>(null)
 
-// Mock data for dropdowns
+// Use constants from the service
 const paymentMethods = [
-  { value: 'cash', label: 'Cash' },
-  { value: 'card', label: 'Card' },
-  { value: 'mobile', label: 'Mobile Payment' },
-  { value: 'insurance', label: 'Insurance' },
+  { value: PaymentMethod.CASH, label: 'Cash' },
+  { value: PaymentMethod.BANK_TRANSFER, label: 'Bank Transfer' },
 ]
 
 const saleStatuses = [
-  { value: 'completed', label: 'Completed' },
-  { value: 'pending', label: 'Pending' },
-  { value: 'refunded', label: 'Refunded' },
-  { value: 'cancelled', label: 'Cancelled' },
+  { value: SaleStatus.COMPLETED, label: 'Completed' },
+  { value: SaleStatus.PENDING, label: 'Pending' },
+  { value: SaleStatus.REFUNDED, label: 'Refunded' },
+  { value: SaleStatus.CANCELLED, label: 'Cancelled' },
+  { value: SaleStatus.PARTIALLY_RETURNED, label: 'Partially Returned' },
 ]
 
 const salesPersons = [
@@ -432,70 +400,17 @@ const salesPersons = [
 ]
 
 // Filters and pagination
-const filters = ref<SaleFilters>({
-  search: '',
-  dateFrom: '',
-  dateTo: '',
-  paymentMethod: '',
-  status: '',
-  salesPerson: '',
-  amountMin: undefined,
-  amountMax: undefined,
-})
+const filters = ref<SaleFilters>({})
 
 const pagination = ref<SalePagination>({
   page: 1,
   size: 20,
-  sort: 'saleDate',
+  sort: 'createdDate',
   direction: 'desc',
 })
 
 const totalElements = ref(0)
 const currentSale = ref<Partial<Sale>>({})
-
-// Mock sales data
-const mockSales: Sale[] = [
-  {
-    id: 1,
-    invoiceNumber: 'INV-2025-001',
-    saleDate: '2025-09-23T10:30:00Z',
-    customerName: 'Alice Johnson',
-    customerPhone: '+1234567890',
-    customerEmail: 'alice@email.com',
-    salesPerson: 'John Doe',
-    totalItems: 3,
-    subtotal: 45.50,
-    discount: 2.25,
-    tax: 4.33,
-    totalAmount: 47.58,
-    paymentMethod: 'card',
-    paymentStatus: 'paid',
-    status: 'completed',
-    medicines: [
-      { id: 1, name: 'Paracetamol 500mg', quantity: 2, unitPrice: 12.50 },
-      { id: 2, name: 'Amoxicillin 250mg', quantity: 1, unitPrice: 20.50 },
-    ]
-  },
-  {
-    id: 2,
-    invoiceNumber: 'INV-2025-002',
-    saleDate: '2025-09-23T14:15:00Z',
-    customerName: 'Bob Smith',
-    customerPhone: '+1234567891',
-    salesPerson: 'Jane Smith',
-    totalItems: 1,
-    subtotal: 125.80,
-    discount: 0,
-    tax: 12.58,
-    totalAmount: 138.38,
-    paymentMethod: 'cash',
-    paymentStatus: 'paid',
-    status: 'completed',
-    medicines: [
-      { id: 3, name: 'Insulin Glargine 100IU/mL', quantity: 1, unitPrice: 125.80 },
-    ]
-  },
-]
 
 // Computed properties
 const activeFiltersCount = computed(() => {
@@ -505,17 +420,21 @@ const activeFiltersCount = computed(() => {
 })
 
 const dialogTitle = computed(() => {
-  return currentSale.value.id ? `Sale Details - ${currentSale.value.invoiceNumber}` : 'Sale Details'
+  return currentSale.value.id ? `Sale Details - ${currentSale.value.saleNumber}` : 'Sale Details'
 })
 
-// Methods
+// Methods - Updated to use real API
 const loadSales = async () => {
   try {
     loading.value = true
-    // Mock API call - replace with actual service
-    await new Promise(resolve => setTimeout(resolve, 500))
-    sales.value = mockSales
-    totalElements.value = mockSales.length
+
+    const response = await salesService.getSales()
+    if (response.success && response.data) {
+      sales.value = response.data
+      totalElements.value = response.data.length // Backend doesn't return pagination info yet
+    } else {
+      ElMessage.error(response.message || 'Failed to load sales')
+    }
   } catch (error) {
     ElMessage.error('Failed to load sales')
     console.error('Error loading sales:', error)
@@ -562,16 +481,7 @@ const handleSelectionChange = (selection: Sale[]) => {
 }
 
 const clearFilters = () => {
-  filters.value = {
-    search: '',
-    dateFrom: '',
-    dateTo: '',
-    paymentMethod: '',
-    status: '',
-    salesPerson: '',
-    amountMin: undefined,
-    amountMax: undefined,
-  }
+  filters.value = {}
   dateRange.value = null
   pagination.value.page = 1
   loadSales()
@@ -583,41 +493,62 @@ const applyFilters = () => {
   loadSales()
 }
 
-// CRUD operations
+// CRUD operations - Updated to use real API
 const handleAddSale = () => {
   ElMessage.info('New sale functionality to be implemented')
 }
 
-const handleViewSale = (sale: Sale) => {
-  currentSale.value = { ...sale }
-  dialogVisible.value = true
+const handleViewSale = async (sale: Sale) => {
+  try {
+    const response = await salesService.getSaleById(sale.id)
+    if (response.success && response.data) {
+      currentSale.value = response.data
+      dialogVisible.value = true
+    } else {
+      ElMessage.error(response.message || 'Failed to load sale details')
+    }
+  } catch (error) {
+    ElMessage.error('Failed to load sale details')
+    console.error('Error loading sale:', error)
+  }
 }
 
 const handlePrintReceipt = () => {
   ElMessage.success('Receipt printed successfully')
 }
 
-const handleProcessRefund = (sale: Sale) => {
-  ElMessageBox.confirm(
-    `Are you sure you want to process a refund for invoice ${sale.invoiceNumber}?`,
-    'Process Refund',
-    {
-      confirmButtonText: 'Process Refund',
-      cancelButtonText: 'Cancel',
-      type: 'warning',
-    },
-  ).then(() => {
-    ElMessage.success('Refund processed successfully')
-    loadSales()
-  }).catch(() => {
-    // User cancelled
-  })
+const handleProcessRefund = async (sale: Sale) => {
+  try {
+    await ElMessageBox.confirm(
+      `Are you sure you want to process a refund for invoice ${sale.saleNumber}?`,
+      'Process Refund',
+      {
+        confirmButtonText: 'Process Refund',
+        cancelButtonText: 'Cancel',
+        type: 'warning',
+      },
+    )
+
+    // Update sale status to refunded
+    const response = await salesService.updateSale(sale.id, { status: SaleStatus.REFUNDED })
+    if (response.success) {
+      ElMessage.success('Refund processed successfully')
+      loadSales()
+    } else {
+      ElMessage.error(response.message || 'Failed to process refund')
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('Failed to process refund')
+      console.error('Error processing refund:', error)
+    }
+  }
 }
 
 const handleDeleteSale = async (sale: Sale) => {
   try {
     await ElMessageBox.confirm(
-      `Are you sure you want to delete sale "${sale.invoiceNumber}"?`,
+      `Are you sure you want to delete sale "${sale.saleNumber}"?`,
       'Delete Sale',
       {
         confirmButtonText: 'Delete',
@@ -625,11 +556,18 @@ const handleDeleteSale = async (sale: Sale) => {
         type: 'warning',
       },
     )
-    ElMessage.success('Sale deleted successfully')
-    loadSales()
+
+    const response = await salesService.deleteSale(sale.id)
+    if (response.success) {
+      ElMessage.success('Sale deleted successfully')
+      loadSales()
+    } else {
+      ElMessage.error(response.message || 'Failed to delete sale')
+    }
   } catch (error) {
     if (error !== 'cancel') {
       ElMessage.error('Failed to delete sale')
+      console.error('Error deleting sale:', error)
     }
   }
 }
@@ -651,48 +589,45 @@ const handleActionCommand = (command: string, sale: Sale) => {
   }
 }
 
-// Utility methods
-const getStatusType = (status: string) => {
+// Utility methods - Updated to use service methods
+const getStatusType = (status: SaleStatus) => {
   switch (status) {
-    case 'completed':
+    case SaleStatus.COMPLETED:
       return 'success'
-    case 'pending':
+    case SaleStatus.PENDING:
       return 'warning'
-    case 'refunded':
+    case SaleStatus.REFUNDED:
+    case SaleStatus.PARTIALLY_RETURNED:
       return 'info'
-    case 'cancelled':
+    case SaleStatus.CANCELLED:
       return 'danger'
     default:
       return 'info'
   }
 }
 
-const getStatusLabel = (status: string) => {
-  return saleStatuses.find((s) => s.value === status)?.label || status
+const getStatusLabel = (status: SaleStatus) => {
+  return salesService.getSaleStatusLabel(status)
 }
 
-const getPaymentMethodType = (method: string) => {
+const getPaymentMethodType = (method: PaymentMethod) => {
   switch (method) {
-    case 'cash':
+    case PaymentMethod.CASH:
       return 'success'
-    case 'card':
+    case PaymentMethod.BANK_TRANSFER:
       return 'primary'
-    case 'mobile':
-      return 'warning'
-    case 'insurance':
-      return 'info'
     default:
       return 'info'
   }
 }
 
-const getPaymentMethodLabel = (method: string) => {
-  return paymentMethods.find((m) => m.value === method)?.label || method
+const getPaymentMethodLabel = (method: PaymentMethod) => {
+  return salesService.getPaymentMethodLabel(method)
 }
 
 const getRowClassName = ({ row }: { row: Sale }) => {
-  if (row.status === 'cancelled') return 'row-suspended'
-  if (row.status === 'refunded') return 'row-inactive'
+  if (row.status === SaleStatus.CANCELLED) return 'row-suspended'
+  if (row.status === SaleStatus.REFUNDED || row.status === SaleStatus.PARTIALLY_RETURNED) return 'row-inactive'
   return ''
 }
 

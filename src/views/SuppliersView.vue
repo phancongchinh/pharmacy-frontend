@@ -406,10 +406,10 @@ const loadSuppliers = async () => {
     loading.value = true
     const response = await suppliersService.getSuppliers(filters.value, {
       ...pagination.value,
-      page: pagination.value.page - 1, // Convert to 0-based for API
+      page: pagination.value.page,
     })
-    suppliers.value = response.data.data.content
-    totalElements.value = response.data.data.page.totalElements
+    suppliers.value = response.data.content
+    totalElements.value = response.data.page.totalElements
   } catch (error) {
     ElMessage.error('Failed to load suppliers')
     console.error('Error loading suppliers:', error)
@@ -575,7 +575,8 @@ const handleActionCommand = (command: string, supplier: Supplier) => {
 
 // Utility methods
 const getStatusType = (status: string) => {
-  switch (status) {
+  if (!status) return 'info'
+  switch (status.toLowerCase()) {
     case 'active':
       return 'success'
     case 'inactive':

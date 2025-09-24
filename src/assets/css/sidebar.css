@@ -47,11 +47,3 @@
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
-
-.el-menu-item:not(.is-active) {
-  color: #667eea;
-}
-
-.el-menu-item > .el-icon {
-  color: #667eea;
-}

@@ -370,8 +370,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
-import { medicinesService } from '@/services/medicinesService'
-import type { Medicine, MedicineFilters, MedicinePagination } from '@/services/medicinesService'
+import { medicinesService, type Medicine, type MedicineFilters, MedicineDosageForm } from '@/services/medicinesService'
 
 // Reactive data
 const loading = ref(false)
@@ -384,7 +383,10 @@ const dialogMode = ref<'add' | 'edit' | 'view'>('add')
 const medicinesTable = ref()
 const medicineForm = ref<FormInstance>()
 
-// Mock data for categories and statuses
+// Use dosage forms from service
+const dosageFormOptions = medicinesService.getDosageFormOptions()
+
+// Mock data for categories and statuses - TODO: Replace with API calls when available
 const medicineCategories = [
   { value: 'pain-relief', label: 'Pain Relief' },
   { value: 'antibiotics', label: 'Antibiotics' },
@@ -395,31 +397,20 @@ const medicineCategories = [
 ]
 
 const medicineStatuses = [
-  { value: 'active', label: 'Active' },
-  { value: 'inactive', label: 'Inactive' },
-  { value: 'discontinued', label: 'Discontinued' },
+  { value: true, label: 'Active' },
+  { value: false, label: 'Inactive' },
 ]
 
 // Filters and pagination
 const filters = ref<MedicineFilters>({
-  search: '',
-  category: '',
-  manufacturer: '',
-  status: '',
-  dosageForm: '',
-  priceMin: undefined,
-  priceMax: undefined,
-  expiryDateFrom: '',
-  expiryDateTo: '',
-  stockMin: undefined,
-  stockMax: undefined,
+  active: undefined,
 })
 
-const pagination = ref<MedicinePagination>({
+const pagination = ref({
   page: 1,
   size: 20,
   sort: 'name',
-  direction: 'asc',
+  direction: 'asc' as 'asc' | 'desc',
 })
 
 const totalElements = ref(0)
@@ -430,13 +421,11 @@ const currentMedicine = ref<Partial<Medicine>>({})
 // Form validation rules
 const medicineRules: FormRules = {
   name: [{ required: true, message: 'Medicine name is required', trigger: 'blur' }],
-  genericName: [{ required: true, message: 'Generic name is required', trigger: 'blur' }],
-  manufacturer: [{ required: true, message: 'Manufacturer is required', trigger: 'blur' }],
-  category: [{ required: true, message: 'Category is required', trigger: 'change' }],
-  dosageForm: [{ required: true, message: 'Dosage form is required', trigger: 'blur' }],
-  strength: [{ required: true, message: 'Strength is required', trigger: 'blur' }],
-  unitPrice: [{ required: true, message: 'Unit price is required', trigger: 'blur' }],
-  status: [{ required: true, message: 'Status is required', trigger: 'change' }],
+  lowStockThreshold: [{ required: true, message: 'Low stock threshold is required', trigger: 'blur' }],
+  dosageForm: [{ required: false, message: 'Dosage form is required', trigger: 'change' }],
+  strength: [{ required: false, message: 'Strength is required', trigger: 'blur' }],
+  prescriptionRequired: [{ required: true, message: 'Prescription requirement is required', trigger: 'change' }],
+  active: [{ required: true, message: 'Status is required', trigger: 'change' }],
 }
 
 // Computed properties
@@ -459,217 +448,424 @@ const dialogTitle = computed(() => {
   }
 })
 
-// Methods
+// Methods - Updated to use real API
 const loadMedicines = async () => {
   try {
     loading.value = true
-    const response = await medicinesService.getMedicines(filters.value, {
-      ...pagination.value,
-      page: pagination.value.page - 1,
-    })
-    medicines.value = response.data.data.content
-    totalElements.value = response.data.data.page.totalElements
-  } catch (error) {
-    ElMessage.warning('API unavailable, loading sample data')
-    console.warn('Error loading medicines from API, using mock data:', error)
 
-    // Use mock data when API fails
-    medicines.value = mockMedicinesData
-    totalElements.value = mockMedicinesData.length
+    const response = await medicinesService.getMedicines(filters.value)
+    if (response.success && response.data) {
+      medicines.value = response.data
+      totalElements.value = response.data.length // Backend doesn't return pagination info yet
+    } else {
+      ElMessage.error(response.message || 'Failed to load medicines')
+    }
+  } catch (error) {
+    ElMessage.error('Failed to load medicines')
+    console.error('Error loading medicines:', error)
   } finally {
     loading.value = false
   }
 }
 
-// Mock medicines data for fallback
-const mockMedicinesData = [
-  {
-    id: 1,
-    name: 'Paracetamol Tablets',
-    genericName: 'Acetaminophen',
-    manufacturer: 'PharmaCorp',
-    category: 'pain-relief',
-    dosageForm: 'Tablet',
-    strength: '500mg',
-    unitPrice: 12.50,
-    stockQuantity: 250,
-    expiryDate: '2026-08-15',
-    batchNumber: 'PC2025001',
-    status: 'active',
-    createdAt: '2025-01-15T08:30:00Z',
-    updatedAt: '2025-09-10T14:20:00Z',
-    batches: [
-      {
-        id: 1,
-        batchNumber: 'PC2025001',
-        expiryDate: '2026-08-15',
-        quantity: 150,
-        unitPrice: 12.50,
-        status: 'active',
-      },
-      {
-        id: 2,
-        batchNumber: 'PC2025002',
-        expiryDate: '2026-12-20',
-        quantity: 100,
-        unitPrice: 12.50,
-        status: 'active',
-      },
-    ]
-  },
-  {
-    id: 2,
-    name: 'Amoxicillin Capsules',
-    genericName: 'Amoxicillin',
-    manufacturer: 'MediPharm',
-    category: 'antibiotics',
-    dosageForm: 'Capsule',
-    strength: '250mg',
-    unitPrice: 28.75,
-    stockQuantity: 180,
-    expiryDate: '2025-12-20',
-    batchNumber: 'MP2024015',
-    status: 'active',
-    createdAt: '2024-12-01T10:15:00Z',
-    updatedAt: '2025-09-08T09:45:00Z',
-    batches: [
-      {
-        id: 3,
-        batchNumber: 'MP2024015',
-        expiryDate: '2025-12-20',
-        quantity: 120,
-        unitPrice: 28.75,
-        status: 'active',
-      },
-      {
-        id: 4,
-        batchNumber: 'MP2025001',
-        expiryDate: '2026-06-15',
-        quantity: 60,
-        unitPrice: 28.75,
-        status: 'active',
-      },
-    ]
-  },
-  {
-    id: 3,
-    name: 'Lisinopril Tablets',
-    genericName: 'Lisinopril',
-    manufacturer: 'CardioMed',
-    category: 'cardiovascular',
-    dosageForm: 'Tablet',
-    strength: '10mg',
-    unitPrice: 45.20,
-    stockQuantity: 120,
-    expiryDate: '2027-03-10',
-    batchNumber: 'CM2025003',
-    status: 'active',
-    createdAt: '2025-03-05T11:20:00Z',
-    updatedAt: '2025-09-11T16:30:00Z',
-    batches: [
-      {
-        id: 5,
-        batchNumber: 'CM2025003',
-        expiryDate: '2027-03-10',
-        quantity: 80,
-        unitPrice: 45.20,
-        status: 'active',
-      },
-      {
-        id: 6,
-        batchNumber: 'CM2025004',
-        expiryDate: '2027-01-22',
-        quantity: 40,
-        unitPrice: 45.20,
-        status: 'active',
-      },
-    ]
-  },
-  {
-    id: 4,
-    name: 'Insulin Glargine Injection',
-    genericName: 'Insulin Glargine',
-    manufacturer: 'DiabetesRx',
-    category: 'diabetes',
-    dosageForm: 'Injection',
-    strength: '100IU/mL',
-    unitPrice: 125.80,
-    stockQuantity: 45,
-    expiryDate: '2025-11-30',
-    batchNumber: 'DR2024012',
-    status: 'active',
-    createdAt: '2024-11-15T13:45:00Z',
-    updatedAt: '2025-09-09T12:15:00Z',
-    batches: [
-      {
-        id: 7,
-        batchNumber: 'DR2024012',
-        expiryDate: '2025-11-30',
-        quantity: 25,
-        unitPrice: 125.80,
-        status: 'low-stock',
-      },
-      {
-        id: 8,
-        batchNumber: 'DR2025001',
-        expiryDate: '2026-03-15',
-        quantity: 20,
-        unitPrice: 125.80,
-        status: 'active',
-      },
-    ]
-  },
-  {
-    id: 5,
-    name: 'Omeprazole Capsules',
-    genericName: 'Omeprazole',
-    manufacturer: 'GastroHealth',
-    category: 'gastrointestinal',
-    dosageForm: 'Capsule',
-    strength: '20mg',
-    unitPrice: 18.90,
-    stockQuantity: 0,
-    expiryDate: '2024-10-15',
-    batchNumber: 'GH2023008',
-    status: 'discontinued',
-    createdAt: '2023-08-20T09:30:00Z',
-    updatedAt: '2025-09-05T08:00:00Z',
-    batches: []
-  },
-  {
-    id: 6,
-    name: 'Metformin Tablets',
-    genericName: 'Metformin Hydrochloride',
-    manufacturer: 'DiabetesRx',
-    category: 'diabetes',
-    dosageForm: 'Tablet',
-    strength: '850mg',
-    unitPrice: 15.25,
-    stockQuantity: 300,
-    expiryDate: '2026-12-31',
-    batchNumber: 'DR2025004',
-    status: 'active',
-    createdAt: '2025-02-10T09:15:00Z',
-    updatedAt: '2025-09-12T11:20:00Z',
-    batches: [
-      {
-        id: 9,
-        batchNumber: 'DR2025004',
-        expiryDate: '2026-12-31',
-        quantity: 200,
-        unitPrice: 15.25,
-        status: 'active',
-      },
-      {
-        id: 10,
-        batchNumber: 'DR2025005',
-        expiryDate: '2027-02-28',
-        quantity: 100,
-        unitPrice: 15.25,
-        status: 'active',
-      },
-    ]
-  },
-]
+const handleSearchChange = () => {
+  pagination.value.page = 1
+  loadMedicines()
+}
 
-// ...existing code...
+const handleFilterChange = () => {
+  pagination.value.page = 1
+  loadMedicines()
+}
+
+const handleSizeChange = (size: number) => {
+  pagination.value.size = size
+  pagination.value.page = 1
+  loadMedicines()
+}
+
+const handleCurrentChange = (page: number) => {
+  pagination.value.page = page
+  loadMedicines()
+}
+
+const handleSelectionChange = (selection: Medicine[]) => {
+  selectedMedicines.value = selection
+}
+
+const handleExpandChange = (row: Medicine, expanded: boolean) => {
+  if (expanded && (!row.medicineBatches || row.medicineBatches.length === 0)) {
+    // Load medicine batches if not already loaded
+    console.log('Loading batches for medicine:', row.id)
+  }
+}
+
+const clearFilters = () => {
+  filters.value = { active: undefined }
+  pagination.value.page = 1
+  loadMedicines()
+}
+
+const applyFilters = () => {
+  drawerVisible.value = false
+  pagination.value.page = 1
+  loadMedicines()
+}
+
+// CRUD operations - Updated to use real API
+const handleAddMedicine = () => {
+  currentMedicine.value = {
+    name: '',
+    lowStockThreshold: 10,
+    prescriptionRequired: false,
+    active: true,
+  }
+  dialogMode.value = 'add'
+  dialogVisible.value = true
+}
+
+const handleViewMedicine = async (medicine: Medicine) => {
+  try {
+    const response = await medicinesService.getMedicineById(medicine.id)
+    if (response.success && response.data) {
+      currentMedicine.value = response.data
+      dialogMode.value = 'view'
+      dialogVisible.value = true
+    } else {
+      ElMessage.error(response.message || 'Failed to load medicine details')
+    }
+  } catch (error) {
+    ElMessage.error('Failed to load medicine details')
+    console.error('Error loading medicine:', error)
+  }
+}
+
+const handleEditMedicine = async (medicine: Medicine) => {
+  try {
+    const response = await medicinesService.getMedicineById(medicine.id)
+    if (response.success && response.data) {
+      currentMedicine.value = response.data
+      dialogMode.value = 'edit'
+      dialogVisible.value = true
+    } else {
+      ElMessage.error(response.message || 'Failed to load medicine details')
+    }
+  } catch (error) {
+    ElMessage.error('Failed to load medicine details')
+    console.error('Error loading medicine:', error)
+  }
+}
+
+const handleSaveMedicine = async () => {
+  if (!medicineForm.value) return
+
+  try {
+    const valid = await medicineForm.value.validate()
+    if (!valid) return
+
+    saving.value = true
+
+    if (dialogMode.value === 'add') {
+      const response = await medicinesService.createMedicine(currentMedicine.value as any)
+      if (response.success) {
+        ElMessage.success('Medicine created successfully')
+        dialogVisible.value = false
+        loadMedicines()
+      } else {
+        ElMessage.error(response.message || 'Failed to create medicine')
+      }
+    } else if (dialogMode.value === 'edit') {
+      const response = await medicinesService.updateMedicine(currentMedicine.value.id!, currentMedicine.value)
+      if (response.success) {
+        ElMessage.success('Medicine updated successfully')
+        dialogVisible.value = false
+        loadMedicines()
+      } else {
+        ElMessage.error(response.message || 'Failed to update medicine')
+      }
+    }
+  } catch (error) {
+    ElMessage.error(`Failed to ${dialogMode.value} medicine`)
+    console.error(`Error ${dialogMode.value} medicine:`, error)
+  } finally {
+    saving.value = false
+  }
+}
+
+const handleDeleteMedicine = async (medicine: Medicine) => {
+  try {
+    await ElMessageBox.confirm(
+      `Are you sure you want to delete medicine "${medicine.name}"?`,
+      'Delete Medicine',
+      {
+        confirmButtonText: 'Delete',
+        cancelButtonText: 'Cancel',
+        type: 'warning',
+      },
+    )
+
+    const response = await medicinesService.deleteMedicine(medicine.id)
+    if (response.success) {
+      ElMessage.success('Medicine deactivated successfully')
+      loadMedicines()
+    } else {
+      ElMessage.error(response.message || 'Failed to delete medicine')
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('Failed to delete medicine')
+      console.error('Error deleting medicine:', error)
+    }
+  }
+}
+
+const handleAddBatch = (medicine: Medicine) => {
+  ElMessage.info('Add batch functionality to be implemented')
+}
+
+const handleActionCommand = (command: string, medicine: Medicine) => {
+  switch (command) {
+    case 'view':
+      handleViewMedicine(medicine)
+      break
+    case 'edit':
+      handleEditMedicine(medicine)
+      break
+    case 'add-batch':
+      handleAddBatch(medicine)
+      break
+    case 'delete':
+      handleDeleteMedicine(medicine)
+      break
+  }
+}
+
+// Utility methods
+const getStatusType = (active: boolean) => {
+  return active ? 'success' : 'danger'
+}
+
+const getStatusLabel = (active: boolean) => {
+  return active ? 'Active' : 'Inactive'
+}
+
+const getStockClass = (quantity: number) => {
+  if (quantity === 0) return 'stock-out'
+  if (quantity <= 10) return 'stock-low'
+  return 'stock-normal'
+}
+
+const getBatchStatusType = (status: string) => {
+  switch (status) {
+    case 'active':
+      return 'success'
+    case 'low-stock':
+      return 'warning'
+    case 'expired':
+      return 'danger'
+    default:
+      return 'info'
+  }
+}
+
+const getRowClassName = ({ row }: { row: Medicine }) => {
+  if (!row.active) return 'row-inactive'
+  return ''
+}
+
+const isExpiringsoon = (expiryDate: string) => {
+  const expiry = new Date(expiryDate)
+  const today = new Date()
+  const diffTime = expiry.getTime() - today.getTime()
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+  return diffDays <= 30 && diffDays > 0
+}
+
+const formatCurrency = (value: number) => {
+  return new Intl.NumberFormat('en-US').format(value)
+}
+
+const formatDate = (dateString: string) => {
+  return new Date(dateString).toLocaleDateString()
+}
+
+// Lifecycle hooks
+onMounted(() => {
+  loadMedicines()
+})
+</script>
+
+<style scoped>
+/* Inherit common styles */
+.search-input {
+  max-width: 600px;
+}
+
+.filter-badge {
+  margin-left: 8px;
+}
+
+/* Medicine info styling */
+.medicine-info .medicine-name {
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 4px;
+}
+
+.medicine-info .medicine-generic {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.manufacturer-info .manufacturer {
+  font-weight: 500;
+  color: #1f2937;
+  margin-bottom: 4px;
+}
+
+.manufacturer-info .category {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.dosage-info .form {
+  font-weight: 500;
+  color: #1f2937;
+  margin-bottom: 4px;
+}
+
+.dosage-info .strength {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.order-value {
+  font-weight: 600;
+  color: #059669;
+}
+
+/* Stock quantity styling */
+.stock-normal {
+  color: #059669;
+  font-weight: 500;
+}
+
+.stock-low {
+  color: #f59e0b;
+  font-weight: 600;
+}
+
+.stock-out {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+/* Batch details styling */
+.batch-details {
+  padding: 20px;
+  background: #f9fafb;
+  border-radius: 8px;
+  margin: 10px;
+}
+
+.batch-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 12px 0;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 8px;
+}
+
+.batch-table {
+  background: white;
+  border-radius: 6px;
+}
+
+.expiry-warning {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.batch-quantity {
+  font-weight: 500;
+  color: #1f2937;
+}
+
+.batch-price {
+  color: #059669;
+  font-weight: 500;
+}
+
+/* Pagination container */
+.pagination-container {
+  position: sticky;
+  bottom: 0;
+  padding: 16px 24px;
+  border-top: 1px solid #e5e7eb;
+  background: white;
+  display: flex;
+  justify-content: center;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+  transition: all 0.3s ease;
+}
+
+/* Filters drawer */
+.filters-drawer {
+  padding: 20px;
+}
+
+.filter-group {
+  margin-bottom: 20px;
+}
+
+.filter-label {
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.filter-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+}
+
+/* Dialog styling */
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.medicine-form {
+  padding: 0 24px;
+}
+
+/* Row styling */
+:deep(.row-inactive) {
+  background-color: #f9fafb !important;
+  opacity: 0.7;
+}
+
+/* Dropdown menu item styling */
+:deep(.el-dropdown-menu__item) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+:deep(.el-dropdown-menu__item .material-symbols-outlined) {
+  font-size: 18px;
+}
+
+/* Material symbols styling */
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+</style>

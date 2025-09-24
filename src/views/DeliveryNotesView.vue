@@ -565,11 +565,7 @@
             </div>
             <div class="form-item">
               <label>Status</label>
-              <el-select
-                v-model="currentDeliveryNote.status"
-                placeholder="Select status"
-                clearable
-              >
+              <el-select v-model="currentDeliveryNote.status" placeholder="Select status" clearable>
                 <el-option
                   v-for="status in deliveryStatuses"
                   :key="status.value"
@@ -624,55 +620,13 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-
-// Types
-interface DeliveryNote {
-  id: number
-  deliveryNumber: string
-  deliveryDate: string
-  expectedDelivery: string
-  customerName: string
-  customerPhone: string
-  customerEmail?: string
-  deliveryAddress: string
-  deliveryMethod: string
-  trackingNumber?: string
-  deliveredBy?: string
-  deliveredAt?: string
-  totalItems: number
-  totalQuantity: number
-  totalValue: number
-  deliveryFee?: number
-  status: string
-  priority: string
-  specialInstructions?: string
-  notes?: string
-  medicines: Array<{
-    id: number
-    name: string
-    batchNumber: string
-    expiryDate: string
-    quantity: number
-    unitPrice: number
-    specialInstructions?: string
-  }>
-}
-
-interface DeliveryNoteFilters {
-  search?: string
-  dateFrom?: string
-  dateTo?: string
-  deliveryMethod?: string
-  status?: string
-  priority?: string
-}
-
-interface DeliveryNotePagination {
-  page: number
-  size: number
-  sort?: string
-  direction?: 'asc' | 'desc'
-}
+import {
+  deliveryNotesService,
+  type DeliveryNote,
+  type DeliveryNoteFilters,
+  DeliveryStatus,
+  DeliveryType,
+} from '@/services/deliveryNotesService'
 
 // Reactive data
 const loading = ref(false)
@@ -683,7 +637,12 @@ const dialogVisible = ref(false)
 const deliveryNotesTable = ref()
 const dateRange = ref<[string, string] | null>(null)
 
-// Mock data for dropdowns
+// Use constants from service
+const deliveryStatuses = [
+  { value: DeliveryStatus.COMPLETED, label: 'Completed' },
+  { value: DeliveryStatus.CANCELLED, label: 'Cancelled' },
+]
+
 const deliveryMethods = [
   { value: 'courier', label: 'Courier' },
   { value: 'self-pickup', label: 'Self Pickup' },
@@ -691,147 +650,26 @@ const deliveryMethods = [
   { value: 'express', label: 'Express Delivery' },
 ]
 
-const deliveryStatuses = [
-  { value: 'pending', label: 'Pending' },
-  { value: 'preparing', label: 'Preparing' },
-  { value: 'ready', label: 'Ready for Pickup' },
-  { value: 'in-transit', label: 'In Transit' },
-  { value: 'delivered', label: 'Delivered' },
-  { value: 'cancelled', label: 'Cancelled' },
-  { value: 'returned', label: 'Returned' },
-]
-
-const priorities = [
-  { value: 'low', label: 'Low' },
-  { value: 'normal', label: 'Normal' },
-  { value: 'high', label: 'High' },
-  { value: 'urgent', label: 'Urgent' },
+const deliveryTypes = [
+  { value: DeliveryType.FOR_SALES, label: 'For Sales' },
+  { value: DeliveryType.FOR_INTERNAL_USE, label: 'For Internal Use' },
+  { value: DeliveryType.FOR_RETURNS, label: 'For Returns' },
+  { value: DeliveryType.FOR_DAMAGED_GOODS, label: 'For Damaged Goods' },
+  { value: DeliveryType.FOR_EXPIRY_MANAGEMENT, label: 'For Expiry Management' },
 ]
 
 // Filters and pagination
-const filters = ref<DeliveryNoteFilters>({
-  search: '',
-  dateFrom: '',
-  dateTo: '',
-  deliveryMethod: '',
-  status: '',
-  priority: '',
-})
+const filters = ref<DeliveryNoteFilters>({})
 
-const pagination = ref<DeliveryNotePagination>({
+const pagination = ref({
   page: 1,
   size: 20,
   sort: 'deliveryDate',
-  direction: 'desc',
+  direction: 'desc' as 'asc' | 'desc',
 })
 
 const totalElements = ref(0)
 const currentDeliveryNote = ref<Partial<DeliveryNote>>({})
-
-// Mock delivery notes data
-const mockDeliveryNotes: DeliveryNote[] = [
-  {
-    id: 1,
-    deliveryNumber: 'DN-2025-001',
-    deliveryDate: '2025-09-23T08:00:00Z',
-    expectedDelivery: '2025-09-23T14:00:00Z',
-    customerName: 'Sarah Johnson',
-    customerPhone: '+1234567890',
-    customerEmail: 'sarah@email.com',
-    deliveryAddress: '123 Main Street, Downtown, City 12345',
-    deliveryMethod: 'courier',
-    trackingNumber: 'TRK-2025-001',
-    deliveredBy: 'Mike Wilson',
-    deliveredAt: '2025-09-23T13:45:00Z',
-    totalItems: 2,
-    totalQuantity: 3,
-    totalValue: 67.5,
-    deliveryFee: 5.0,
-    status: 'delivered',
-    priority: 'normal',
-    specialInstructions: 'Ring doorbell twice, leave at front door if no answer',
-    medicines: [
-      {
-        id: 1,
-        name: 'Paracetamol 500mg',
-        batchNumber: 'PC2025001',
-        expiryDate: '2026-08-15',
-        quantity: 2,
-        unitPrice: 12.5,
-        specialInstructions: 'Keep in cool, dry place',
-      },
-      {
-        id: 2,
-        name: 'Vitamin D3 1000IU',
-        batchNumber: 'VD2025001',
-        expiryDate: '2026-12-20',
-        quantity: 1,
-        unitPrice: 42.5,
-      },
-    ],
-  },
-  {
-    id: 2,
-    deliveryNumber: 'DN-2025-002',
-    deliveryDate: '2025-09-23T10:30:00Z',
-    expectedDelivery: '2025-09-24T16:00:00Z',
-    customerName: 'Robert Brown',
-    customerPhone: '+1234567891',
-    deliveryAddress: '456 Oak Avenue, Suburb, City 12346',
-    deliveryMethod: 'express',
-    trackingNumber: 'TRK-2025-002',
-    totalItems: 1,
-    totalQuantity: 1,
-    totalValue: 125.8,
-    deliveryFee: 15.0,
-    status: 'in-transit',
-    priority: 'high',
-    medicines: [
-      {
-        id: 3,
-        name: 'Insulin Glargine 100IU/mL',
-        batchNumber: 'IN2025001',
-        expiryDate: '2025-11-30',
-        quantity: 1,
-        unitPrice: 125.8,
-        specialInstructions: 'Refrigerated delivery required',
-      },
-    ],
-  },
-  {
-    id: 3,
-    deliveryNumber: 'DN-2025-003',
-    deliveryDate: '2025-09-23T12:00:00Z',
-    expectedDelivery: '2025-09-25T10:00:00Z',
-    customerName: 'Emily Davis',
-    customerPhone: '+1234567892',
-    deliveryAddress: '789 Pine Road, Uptown, City 12347',
-    deliveryMethod: 'self-pickup',
-    totalItems: 3,
-    totalQuantity: 6,
-    totalValue: 89.25,
-    status: 'ready',
-    priority: 'normal',
-    medicines: [
-      {
-        id: 4,
-        name: 'Amoxicillin 250mg',
-        batchNumber: 'AM2025001',
-        expiryDate: '2025-12-20',
-        quantity: 3,
-        unitPrice: 18.75,
-      },
-      {
-        id: 5,
-        name: 'Cough Syrup 200ml',
-        batchNumber: 'CS2025001',
-        expiryDate: '2026-06-15',
-        quantity: 3,
-        unitPrice: 12.0,
-      },
-    ],
-  },
-]
 
 // Computed properties
 const activeFiltersCount = computed(() => {
@@ -844,18 +682,22 @@ const activeFiltersCount = computed(() => {
 
 const dialogTitle = computed(() => {
   return currentDeliveryNote.value.id
-    ? `Delivery Note Details - ${currentDeliveryNote.value.deliveryNumber}`
+    ? `Delivery Note - ${currentDeliveryNote.value.deliveryNumber}`
     : 'Delivery Note Details'
 })
 
-// Methods
+// Methods - Updated to use real API
 const loadDeliveryNotes = async () => {
   try {
     loading.value = true
-    // Mock API call - replace with actual service
-    await new Promise((resolve) => setTimeout(resolve, 500))
-    deliveryNotes.value = mockDeliveryNotes
-    totalElements.value = mockDeliveryNotes.length
+
+    const response = await deliveryNotesService.getDeliveryNotes()
+    if (response.success && response.data) {
+      deliveryNotes.value = response.data
+      totalElements.value = response.data.length // Backend doesn't return pagination info yet
+    } else {
+      ElMessage.error(response.message || 'Failed to load delivery notes')
+    }
   } catch (error) {
     ElMessage.error('Failed to load delivery notes')
     console.error('Error loading delivery notes:', error)
@@ -902,14 +744,7 @@ const handleSelectionChange = (selection: DeliveryNote[]) => {
 }
 
 const clearFilters = () => {
-  filters.value = {
-    search: '',
-    dateFrom: '',
-    dateTo: '',
-    deliveryMethod: '',
-    status: '',
-    priority: '',
-  }
+  filters.value = {}
   dateRange.value = null
   pagination.value.page = 1
   loadDeliveryNotes()
@@ -921,134 +756,100 @@ const applyFilters = () => {
   loadDeliveryNotes()
 }
 
-// CRUD operations
+// CRUD operations - Updated to use real API
 const handleAddDeliveryNote = () => {
-  currentDeliveryNote.value = {
-    deliveryNumber: generateDeliveryNumber(),
-    deliveryDate: new Date().toISOString(),
-    expectedDelivery: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // Next day
-    customerName: '',
-    customerPhone: '',
-    customerEmail: '',
-    deliveryAddress: '',
-    deliveryMethod: 'courier',
-    trackingNumber: '',
-    deliveredBy: '',
-    deliveredAt: '',
-    totalItems: 0,
-    totalQuantity: 0,
-    totalValue: 0,
-    deliveryFee: 0,
-    status: 'pending',
-    priority: 'normal',
-    specialInstructions: '',
-    notes: '',
-    medicines: []
-  }
-  dialogMode.value = 'add'
-  dialogVisible.value = true
+  ElMessage.info('New delivery note functionality to be implemented')
 }
 
-const generateDeliveryNumber = () => {
-  const now = new Date()
-  const year = now.getFullYear()
-  const month = String(now.getMonth() + 1).padStart(2, '0')
-  const day = String(now.getDate()).padStart(2, '0')
-  const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0')
-  return `DN-${year}${month}${day}-${random}`
-}
-
-// New delivery note dialog methods
-const dialogMode = ref<'add' | 'edit' | 'view'>('add')
-const deliveryNoteForm = ref()
-
-const addMedicineRowDelivery = () => {
-  if (!currentDeliveryNote.value.medicines) {
-    currentDeliveryNote.value.medicines = []
-  }
-  currentDeliveryNote.value.medicines.push({
-    id: Date.now(),
-    name: '',
-    batchNumber: '',
-    expiryDate: '',
-    quantity: 0,
-    unitPrice: 0,
-    specialInstructions: ''
-  })
-}
-
-const handleMedicineChangeDelivery = () => {
-  // Recalculate totals when medicine data changes
-  if (currentDeliveryNote.value.medicines) {
-    currentDeliveryNote.value.totalItems = currentDeliveryNote.value.medicines.length
-    currentDeliveryNote.value.totalQuantity = currentDeliveryNote.value.medicines.reduce(
-      (sum, medicine) => sum + medicine.quantity, 0
-    )
-    currentDeliveryNote.value.totalValue = currentDeliveryNote.value.medicines.reduce(
-      (sum, medicine) => sum + (medicine.quantity * medicine.unitPrice), 0
-    )
-  }
-}
-
-const handleDeliveryDateChange = (date: string) => {
-  currentDeliveryNote.value.deliveryDate = date
-}
-
-const handleExpectedDeliveryChange = (date: string) => {
-  currentDeliveryNote.value.expectedDelivery = date
-}
-
-const handleDeliveryMethodChange = (method: string) => {
-  currentDeliveryNote.value.deliveryMethod = method
-  // Auto-generate tracking number for courier and express
-  if (method === 'courier' || method === 'express') {
-    currentDeliveryNote.value.trackingNumber = generateTrackingNumber()
-  } else {
-    currentDeliveryNote.value.trackingNumber = ''
-  }
-}
-
-const generateTrackingNumber = () => {
-  const prefix = currentDeliveryNote.value.deliveryMethod === 'express' ? 'EXP' : 'TRK'
-  const now = new Date()
-  const year = now.getFullYear()
-  const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0')
-  return `${prefix}-${year}-${random}`
-}
-
-const saveDeliveryNote = async () => {
+const handleViewDeliveryNote = async (deliveryNote: DeliveryNote) => {
   try {
-    // Validate required fields
-    if (!currentDeliveryNote.value.customerName) {
-      ElMessage.error('Please enter customer name')
-      return
+    const response = await deliveryNotesService.getDeliveryNoteById(deliveryNote.id)
+    if (response.success && response.data) {
+      currentDeliveryNote.value = response.data
+      dialogVisible.value = true
+    } else {
+      ElMessage.error(response.message || 'Failed to load delivery note details')
     }
-    if (!currentDeliveryNote.value.customerPhone) {
-      ElMessage.error('Please enter customer phone')
-      return
-    }
-    if (!currentDeliveryNote.value.deliveryAddress) {
-      ElMessage.error('Please enter delivery address')
-      return
-    }
-    if (!currentDeliveryNote.value.medicines || currentDeliveryNote.value.medicines.length === 0) {
-      ElMessage.error('Please add at least one medicine')
-      return
-    }
-
-    // Mock API call - replace with actual service
-    await new Promise(resolve => setTimeout(resolve, 500))
-
-    ElMessage.success('Delivery note created successfully')
-    dialogVisible.value = false
-    loadDeliveryNotes()
   } catch (error) {
-    ElMessage.error('Failed to create delivery note')
-    console.error('Error creating delivery note:', error)
+    ElMessage.error('Failed to load delivery note details')
+    console.error('Error loading delivery note:', error)
   }
 }
 
-// ...existing code...
+const handleEditDeliveryNote = (deliveryNote: DeliveryNote) => {
+  ElMessage.info('Edit delivery note functionality to be implemented')
+}
+
+const handleDeleteDeliveryNote = async (deliveryNote: DeliveryNote) => {
+  try {
+    await ElMessageBox.confirm(
+      `Are you sure you want to delete delivery note "${deliveryNote.deliveryNumber}"?`,
+      'Delete Delivery Note',
+      {
+        confirmButtonText: 'Delete',
+        cancelButtonText: 'Cancel',
+        type: 'warning',
+      },
+    )
+
+    const response = await deliveryNotesService.deleteDeliveryNote(deliveryNote.id)
+    if (response.success) {
+      ElMessage.success('Delivery note deleted successfully')
+      loadDeliveryNotes()
+    } else {
+      ElMessage.error(response.message || 'Failed to delete delivery note')
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('Failed to delete delivery note')
+      console.error('Error deleting delivery note:', error)
+    }
+  }
+}
+
+const handleActionCommand = (command: string, deliveryNote: DeliveryNote) => {
+  switch (command) {
+    case 'view':
+      handleViewDeliveryNote(deliveryNote)
+      break
+    case 'edit':
+      handleEditDeliveryNote(deliveryNote)
+      break
+    case 'delete':
+      handleDeleteDeliveryNote(deliveryNote)
+      break
+  }
+}
+
+// Utility methods
+const getStatusType = (status: DeliveryStatus) => {
+  return deliveryNotesService.getDeliveryStatusLabel(status) === 'Completed' ? 'success' : 'danger'
+}
+
+const getStatusLabel = (status: DeliveryStatus) => {
+  return deliveryNotesService.getDeliveryStatusLabel(status)
+}
+
+const getDeliveryTypeLabel = (type: DeliveryType) => {
+  return deliveryNotesService.getDeliveryTypeLabel(type)
+}
+
+const formatCurrency = (value: number) => {
+  return new Intl.NumberFormat('en-US').format(value)
+}
+
+const formatDate = (dateString: string) => {
+  return new Date(dateString).toLocaleDateString()
+}
+
+const formatDateTime = (dateString: string) => {
+  return new Date(dateString).toLocaleString()
+}
+
+// Lifecycle hooks
+onMounted(() => {
+  loadDeliveryNotes()
+})
 </script>
 
 <style scoped>
