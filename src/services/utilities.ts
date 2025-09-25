@@ -4,7 +4,7 @@ export const toQueryString = <T>(filters: T): string => {
   Object.entries(filters).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== '') {
       if (Array.isArray(value)) {
-        params.append(key, value.join(','))
+        value.forEach((valueElement) => params.append(key, String(valueElement)))
       } else {
         params.append(key, String(value))
       }

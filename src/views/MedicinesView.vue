@@ -18,7 +18,7 @@
     <div class="medicines-content">
       <div class="mb-3 d-flex align-items-center justify-content-between">
         <el-input
-          v-model="filters.search"
+          v-model="filters.q"
           placeholder="Search medicines by name, generic name, manufacturer..."
           class="search-input"
           clearable
@@ -64,7 +64,7 @@
                         <el-skeleton-item variant="text" style="width: 15%" />
                         <el-skeleton-item variant="text" style="width: 10%" />
                         <el-skeleton-item variant="text" style="width: 15%" />
-                        <el-skeleton-item variant="rect" style="width: 60px; height: 24px;" />
+                        <el-skeleton-item variant="rect" style="width: 60px; height: 24px" />
                       </div>
                     </template>
                   </el-skeleton>
@@ -77,6 +77,15 @@
                   v-else-if="row.medicineBatches && row.medicineBatches.length > 0"
                 >
                   <el-table-column prop="batchNumber" label="Batch Number" min-width="120" />
+                  <el-table-column
+                    prop="manufacturingDate"
+                    label="Manufacturing Date"
+                    min-width="120"
+                  >
+                    <template #default="{ row: batch }">
+                      {{ formatDate(batch.manufacturingDate) }}
+                    </template>
+                  </el-table-column>
                   <el-table-column prop="expiryDate" label="Expiry Date" min-width="120">
                     <template #default="{ row: batch }">
                       <span :class="{ 'expiry-warning': isExpiringSoon(batch.expiryDate) }">
@@ -89,9 +98,14 @@
                       <span class="batch-quantity">{{ batch.quantity }}</span>
                     </template>
                   </el-table-column>
-                  <el-table-column prop="unitPrice" label="Unit Price" min-width="100">
+                  <el-table-column prop="price" label="Price" min-width="100">
                     <template #default="{ row: batch }">
-                      <span class="batch-price">${{ formatCurrency(batch.unitPrice) }}</span>
+                      <span class="batch-price">${{ formatCurrency(batch.price) }}</span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="purchasePrice" label="Purchase Price" min-width="100">
+                    <template #default="{ row: batch }">
+                      <span class="batch-price">${{ formatCurrency(batch.purchasePrice) }}</span>
                     </template>
                   </el-table-column>
                   <el-table-column prop="status" label="Status" min-width="100">
@@ -116,9 +130,9 @@
             </template>
           </el-table-column>
 
-          <el-table-column type="selection" width="55" />
+          <el-table-column type="selection" width="40" />
 
-          <el-table-column prop="name" label="Medicine Name" min-width="200">
+          <el-table-column prop="name" label="Medicine Name" min-width="180">
             <template #default="{ row }">
               <div class="medicine-info">
                 <div class="medicine-name">{{ row.name }}</div>
@@ -127,12 +141,22 @@
             </template>
           </el-table-column>
 
-          <el-table-column prop="manufacturer" label="Manufacturer" min-width="150">
+          <el-table-column prop="categories" label="Categories" min-width="250">
             <template #default="{ row }">
-              <div class="manufacturer-info">
-                <div class="manufacturer">{{ row.manufacturer }}</div>
-                <div class="category">{{ row.category }}</div>
+              <div class="d-flex flex-wrap gap-2">
+                <el-tag v-for="c in row.categories" :key="c.id" size="small">
+                  {{ c.name }}
+                </el-tag>
               </div>
+            </template>
+          </el-table-column>
+
+          <el-table-column prop="categories" label="Thuốc kê đơn" min-width="120">
+            <template #default="{ row }">
+              <el-tag v-if="row.prescriptionRequired" size="small" type="danger">
+                Thuốc kê đơn</el-tag
+              >
+              <el-tag v-else size="small" type="success">Thuốc không kê đơn</el-tag>
             </template>
           </el-table-column>
 
@@ -145,27 +169,27 @@
             </template>
           </el-table-column>
 
-          <el-table-column prop="unitPrice" label="Unit Price" min-width="110">
+          <el-table-column prop="stockQuantity" label="Stock" min-width="70">
             <template #default="{ row }">
-              <span class="order-value">${{ formatCurrency(row.unitPrice) }}</span>
+              <span :class="getStockClass(row.stockQuantity)">{{ row.stock }}</span>
             </template>
           </el-table-column>
 
-          <el-table-column prop="stockQuantity" label="Stock" min-width="100">
+          <el-table-column prop="active" label="Status" min-width="70">
             <template #default="{ row }">
-              <span :class="getStockClass(row.stockQuantity)">{{ row.stockQuantity }}</span>
-            </template>
-          </el-table-column>
-
-          <el-table-column prop="status" label="Status" min-width="100">
-            <template #default="{ row }">
-              <el-tag :type="getStatusType(row.status)" size="small">
-                {{ getStatusLabel(row.status) }}
+              <el-tag :type="getStatusType(row.active)" size="small">
+                {{ getStatusLabel(row.active) }}
               </el-tag>
             </template>
           </el-table-column>
 
-          <el-table-column label="Actions" width="100" fixed="right">
+          <el-table-column prop="createdDate" label="Created Date" min-width="100">
+            <template #default="{ row }">
+              {{ formatDate(row.createdDate) }}
+            </template>
+          </el-table-column>
+
+          <el-table-column label="Actions" width="80" fixed="right">
             <template #default="{ row }">
               <el-dropdown @command="(command) => handleActionCommand(command, row)">
                 <el-button type="primary" size="small" text>
@@ -222,26 +246,9 @@
     >
       <div class="filters-content">
         <div class="filter-group">
-          <label class="filter-label">Category</label>
-          <el-select
-            v-model="filters.category"
-            placeholder="Select category"
-            clearable
-            @change="handleFilterChange"
-          >
-            <el-option
-              v-for="category in medicineCategories"
-              :key="category.value"
-              :label="category.label"
-              :value="category.value"
-            />
-          </el-select>
-        </div>
-
-        <div class="filter-group">
           <label class="filter-label">Status</label>
           <el-select
-            v-model="filters.status"
+            v-model="filters.active"
             placeholder="Select status"
             clearable
             @change="handleFilterChange"
@@ -251,6 +258,36 @@
               :key="status.value"
               :label="status.label"
               :value="status.value"
+            />
+          </el-select>
+        </div>
+
+        <div class="filter-group">
+          <label class="filter-label">Prescription Required</label>
+          <el-select
+            v-model="filters.prescriptionRequired"
+            placeholder="Select prescription requirement"
+            clearable
+            @change="handleFilterChange"
+          >
+            <el-option label="Required" :value="true" />
+            <el-option label="Not Required" :value="false" />
+          </el-select>
+        </div>
+
+        <div class="filter-group">
+          <label class="filter-label">Dosage Form</label>
+          <el-select
+            v-model="filters.dosageForm"
+            placeholder="Select dosage form"
+            clearable
+            @change="handleFilterChange"
+          >
+            <el-option
+              v-for="form in dosageFormOptions"
+              :key="form.value"
+              :label="form.label"
+              :value="form.value"
             />
           </el-select>
         </div>
@@ -398,10 +435,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
-import { medicinesService, type Medicine, type MedicineFilters, MedicineDosageForm } from '@/services/medicinesService'
+import { medicinesService, type Medicine, type MedicineFilters } from '@/services/medicinesService'
 
 // Reactive data
 const loading = ref(false)
@@ -435,14 +472,22 @@ const medicineStatuses = [
 
 // Filters and pagination
 const filters = ref<MedicineFilters>({
+  q: '',
   active: undefined,
+  prescriptionRequired: undefined,
+  dosageForm: undefined,
+  categoryIds: [],
+  page: 1,
+  size: 20,
+  sortBy: 'createdDate',
+  sortDir: 'desc',
 })
 
 const pagination = ref({
   page: 1,
   size: 20,
-  sort: 'name',
-  direction: 'asc' as 'asc' | 'desc',
+  sort: 'createdDate',
+  direction: 'desc' as 'asc' | 'desc',
 })
 
 const totalElements = ref(0)
@@ -453,10 +498,14 @@ const currentMedicine = ref<Partial<Medicine>>({})
 // Form validation rules
 const medicineRules: FormRules = {
   name: [{ required: true, message: 'Medicine name is required', trigger: 'blur' }],
-  lowStockThreshold: [{ required: true, message: 'Low stock threshold is required', trigger: 'blur' }],
+  lowStockThreshold: [
+    { required: true, message: 'Low stock threshold is required', trigger: 'blur' },
+  ],
   dosageForm: [{ required: false, message: 'Dosage form is required', trigger: 'change' }],
   strength: [{ required: false, message: 'Strength is required', trigger: 'blur' }],
-  prescriptionRequired: [{ required: true, message: 'Prescription requirement is required', trigger: 'change' }],
+  prescriptionRequired: [
+    { required: true, message: 'Prescription requirement is required', trigger: 'change' },
+  ],
   active: [{ required: true, message: 'Status is required', trigger: 'change' }],
 }
 
@@ -484,14 +533,12 @@ const dialogTitle = computed(() => {
 const loadMedicines = async () => {
   try {
     loading.value = true
-
     const response = await medicinesService.getMedicines(filters.value)
-    if (response.success && response.data) {
-      medicines.value = response.data
-      totalElements.value = response.data.length // Backend doesn't return pagination info yet
-    } else {
-      ElMessage.error(response.message || 'Failed to load medicines')
-    }
+    medicines.value = response.data.content
+    medicines.value.forEach((medicine) => {
+      medicine['stock'] =
+        medicine.medicineBatches?.reduce((acc, batch) => acc + batch.quantity, 0) || 0
+    })
   } catch (error) {
     ElMessage.error('Failed to load medicines')
     console.error('Error loading medicines:', error)
@@ -511,12 +558,15 @@ const handleFilterChange = () => {
 }
 
 const handleSizeChange = (size: number) => {
+  filters.value.size = size
+  filters.value.page = 1
   pagination.value.size = size
   pagination.value.page = 1
   loadMedicines()
 }
 
 const handleCurrentChange = (page: number) => {
+  filters.value.page = page
   pagination.value.page = page
   loadMedicines()
 }
@@ -534,7 +584,7 @@ const handleExpandChange = async (row: Medicine, expanded: boolean) => {
       const response = await medicinesService.getMedicineBatches(row.id)
       if (response.success && response.data) {
         // Find the medicine in the array and update its batches
-        const medicineIndex = medicines.value.findIndex(m => m.id === row.id)
+        const medicineIndex = medicines.value.findIndex((m) => m.id === row.id)
         if (medicineIndex !== -1) {
           medicines.value[medicineIndex].medicineBatches = response.data
         }
@@ -549,14 +599,14 @@ const handleExpandChange = async (row: Medicine, expanded: boolean) => {
       try {
         const medicineResponse = await medicinesService.getMedicineById(row.id)
         if (medicineResponse.success && medicineResponse.data?.medicineBatches) {
-          const medicineIndex = medicines.value.findIndex(m => m.id === row.id)
+          const medicineIndex = medicines.value.findIndex((m) => m.id === row.id)
           if (medicineIndex !== -1) {
             medicines.value[medicineIndex].medicineBatches = medicineResponse.data.medicineBatches
           }
           console.log(`Loaded batches via medicine details for: ${row.name}`)
         } else {
           // If no batches available, set empty array to prevent repeated API calls
-          const medicineIndex = medicines.value.findIndex(m => m.id === row.id)
+          const medicineIndex = medicines.value.findIndex((m) => m.id === row.id)
           if (medicineIndex !== -1) {
             medicines.value[medicineIndex].medicineBatches = []
           }
@@ -572,7 +622,17 @@ const handleExpandChange = async (row: Medicine, expanded: boolean) => {
 }
 
 const clearFilters = () => {
-  filters.value = { active: undefined }
+  filters.value = {
+    q: '',
+    active: undefined,
+    prescriptionRequired: undefined,
+    dosageForm: undefined,
+    categoryIds: [],
+    page: 1,
+    size: pagination.value.size,
+    sortBy: 'createdDate',
+    sortDir: 'desc',
+  }
   pagination.value.page = 1
   loadMedicines()
 }
@@ -646,7 +706,10 @@ const handleSaveMedicine = async () => {
         ElMessage.error(response.message || 'Failed to create medicine')
       }
     } else if (dialogMode.value === 'edit') {
-      const response = await medicinesService.updateMedicine(currentMedicine.value.id!, currentMedicine.value)
+      const response = await medicinesService.updateMedicine(
+        currentMedicine.value.id!,
+        currentMedicine.value,
+      )
       if (response.success) {
         ElMessage.success('Medicine updated successfully')
         dialogVisible.value = false
@@ -956,6 +1019,10 @@ onMounted(() => {
 
 /* Material symbols styling */
 .material-symbols-outlined {
-  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  font-variation-settings:
+    'FILL' 0,
+    'wght' 400,
+    'GRAD' 0,
+    'opsz' 24;
 }
 </style>

@@ -1,5 +1,6 @@
 import { apiClient } from './apiClient'
 import type { ApiResponse } from './apiClient'
+import { toQueryString } from '@/services/utilities.ts'
 
 // Updated Types to match backend model
 export interface Medicine {
@@ -49,33 +50,26 @@ export enum MedicineDosageForm {
   INHALER = 'INHALER',
   PATCH = 'PATCH',
   POWDER = 'POWDER',
-  OTHER = 'OTHER'
+  OTHER = 'OTHER',
 }
 
 export interface MedicineFilters {
+  q?: string // search query
   active?: boolean
+  prescriptionRequired?: boolean
+  dosageForm?: string
+  categoryIds?: number[]
+  page?: number
+  size?: number
+  sortBy?: string
+  sortDir?: 'asc' | 'desc'
 }
 
 // Service functions
 class MedicinesService {
-  async getMedicines(filters: MedicineFilters = {}): Promise<ApiResponse<Medicine[]>> {
-    const params = new URLSearchParams()
-
-    // Add filter parameters
-    if (filters.active !== undefined) {
-      params.set('active', filters.active.toString())
-    }
-
-    const queryString = params.toString()
-    const url = queryString ? `/api/medicines?${queryString}` : '/api/medicines'
-
-    const response = await apiClient.get<Medicine[]>(url)
-
-    return {
-      data: response.data || response,
-      success: response.success ?? true,
-      message: response.message || 'Medicines retrieved successfully',
-    }
+  async getMedicines(filters: MedicineFilters = {}) {
+    const query = toQueryString(filters)
+    return await apiClient.get('/api/medicines?' + query)
   }
 
   async getMedicineById(id: number): Promise<ApiResponse<Medicine>> {
@@ -100,7 +94,10 @@ class MedicinesService {
   }
 
   async createMedicine(
-    medicine: Omit<Medicine, 'id' | 'createdBy' | 'createdDate' | 'lastModifiedBy' | 'lastModifiedDate' | 'isDeleted'>,
+    medicine: Omit<
+      Medicine,
+      'id' | 'createdBy' | 'createdDate' | 'lastModifiedBy' | 'lastModifiedDate' | 'isDeleted'
+    >,
   ): Promise<ApiResponse<Medicine>> {
     // Ensure active and prescriptionRequired default values
     const medicineData = {
@@ -144,15 +141,15 @@ class MedicinesService {
 
   // Utility methods
   getDosageFormOptions() {
-    return Object.values(MedicineDosageForm).map(form => ({
+    return Object.values(MedicineDosageForm).map((form) => ({
       label: form.charAt(0) + form.slice(1).toLowerCase().replace('_', ' '),
-      value: form
+      value: form,
     }))
   }
 
   // Note: Backend doesn't have bulk operations, implement if needed
   async bulkDeleteMedicines(ids: number[]): Promise<ApiResponse<void>> {
-    const deletePromises = ids.map(id => this.deleteMedicine(id))
+    const deletePromises = ids.map((id) => this.deleteMedicine(id))
     await Promise.all(deletePromises)
 
     return {
